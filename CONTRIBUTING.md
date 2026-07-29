@@ -581,7 +581,7 @@ description: <この手順が何をするものか>。<どんなときに使う�
 ### 8.1 適用範囲と1.2との役割分担
 
 本章の対象は `scripts/` 直下・`scripts/tests/`・`scripts/tests/lib/`・`scripts/tests/fixtures/`・
-`.github/workflows/` です。1.2 は定型作業をどの実現手段（スクリプト・skill・コマンド・エージェント）
+`.github/workflows/`・`.github/dependabot.yml` です。1.2 は定型作業をどの実現手段（スクリプト・skill・コマンド・エージェント）
 で解決するかを選ぶための判断基準であり、本章はスクリプト・CI 定義を選んだ後の追加・変更手順です。
 他の実現手段を選んだ場合の手順は、skill なら4章、コマンドなら3章、エージェントなら1.1・2章を参照して
 ください。
@@ -595,6 +595,7 @@ description: <この手順が何をするものか>。<どんなときに使う�
 | `scripts/tests/lib/` | 複数のハーネスが共有するアサーション等の共通ライブラリ |
 | `scripts/tests/fixtures/` | 回帰テストが読み込む入力データ・期待値等の固定データ |
 | `.github/workflows/<name>.yml` | CI ワークフロー定義 |
+| `.github/dependabot.yml` | GitHub Actions の依存関係（バージョン）更新設定 |
 
 命名は kebab-case に `.sh` を付けた「動詞-目的語」形式を基本とします（例:
 `generate-show-org.sh`）。git を操作するスクリプトは `git-` 接頭辞を付けます（例:
@@ -653,7 +654,7 @@ CI 定義は以下の方針に従います。
 
 - `permissions` は必要最小限に絞ること
 - シークレットを必要としないこと（将来的に必要になった場合は sec-lead に相談すること）
-- 外部アクションはタグ（バージョン）を固定して参照すること
+- 外部アクションはコミット SHA で固定し、参照したタグ名を行末コメントで併記すること（SHA の更新は Dependabot の更新 PR で行う）
 - Claude Code CLI のインストールは devcontainer と同じ `install.sh` 方式を用いること
 - 同一ブランチ・同一PRでの重複実行を避けるため `concurrency` を設定すること
 - コメントは日本語で記述すること
@@ -678,7 +679,7 @@ CI 定義は以下の方針に従います。
 
 ### 8.8 チェックリスト
 - [ ] 対象が本章の適用範囲（`scripts/` 直下・`tests/`・`tests/lib/`・`tests/fixtures/`・
-      `.github/workflows/`）に該当することを確認した
+      `.github/workflows/`・`.github/dependabot.yml`）に該当することを確認した
 - [ ] 他の実現手段（skill/コマンド/エージェント）で代替できないことを1.2に沿って検討した
 - [ ] 配置先が8.2の配置表に沿っている
 - [ ] ファイル名が命名規則（kebab-case+.sh、動詞-目的語、git操作系は`git-`接頭辞、テストハーネスは

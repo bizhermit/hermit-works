@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # SHA固定した GitHub Actions（.github/workflows/ 配下）を週次で更新確認する。
+  # SHA固定のまま古くなる逆リスクを防ぐための最小構成（S-2 対応）。
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
