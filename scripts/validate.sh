@@ -44,6 +44,16 @@
 #      (c) 非リーダー全件の本文に TK-2/E-1統合文（正典⑤節。連携節の実行主体明文化。
 #          `## 連携` 節冒頭に挿入される1行）が逐語存在するかを検証する（欠落はERROR。
 #          リーダーは対象外＝委任行為自体が業務のため）。
+#   10. エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1。従来の数量チェック
+#       [5] が README.md のみを対象とし、.claude-plugin/*.json・DESIGN.md・
+#       DEVELOPMENT.md が死角になっていた是正）
+#      (a) .claude-plugin/marketplace.json・plugin.json の description に、数値による
+#          エージェント数表記（例:「49エージェント」「50名」）が再混入していないかを
+#          検証する（ERROR。数値非依存の表現への統一方針を機械的に担保する）。
+#      (b) DESIGN.md の「Nグループ・M名」・DEVELOPMENT.md の「エージェント定義（N体」
+#          という、現在値としてのエージェント数表記を実体（agents/*.md の数）と突合する
+#          （ERROR）。時点明示付きの履歴記述（例:「当時（49体時点）」）は表記の形が
+#          異なるため対象外（誤検知しない）。
 #
 # 採用理由（旧 scripts/validate.ps1 からの移行にあたって）:
 #   devcontainer（Linux）ベースの開発環境への移行に伴い、実行環境の前提を
@@ -1127,6 +1137,167 @@ for f in "${AGENT_FILES[@]}"; do
 done
 
 # ---------------------------------------------------------------------------
+# 10) エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1）
+#
+# 背景: セクション4のREADME突合チェックは README.md のみを対象としており、
+# .claude-plugin/marketplace.json・.claude-plugin/plugin.json・DESIGN.md・
+# DEVELOPMENT.md は検証の死角だった（実際に marketplace.json「49エージェント」・
+# plugin.json「約50名」等、実体（51）とのズレが長期間すり抜けていた）。是正として
+# 2つのJSONの description は数値非依存の表現（例:「10グループの専門家エージェント」）
+# へ統一したため、(a) では数値表記の再混入自体をERRORとする。DESIGN.md・
+# DEVELOPMENT.md は現在値としての数表記を維持する方針のため、(b) では表記自体は
+# 許容し実体との一致を検証する。
+#
+# 対象ファイルが存在しない検証対象ディレクトリ（テストフィクスチャ等）では、
+# セクション5・6（mgmt-coordinator.md・show-org.md）と同様にERRORにはせず
+# 静かにスキップする（本チェック追加のためだけに無関係な既存フィクスチャ・
+# テストを大量に更新せずに済むようにするための設計判断）。
+# ---------------------------------------------------------------------------
+
+# 数値＋エージェント数を示す語（名/体/エージェント）が直接連結された表記の候補
+# （例:「49エージェント」「50名」「51体」）を検出する正規表現。「10グループ」の
+# ようなグループ数表記は対象外（「グループ」は本パターンに含めない）。
+AGENT_COUNT_CANDIDATE_RE='[0-9]+[[:space:]]*(名|体|エージェント)'
+
+# qa-review差し戻し(1回目) [should-fix 2] への対応: 「体」「名」は日本語の熟語
+# （体験・体重・体格・体温・体調・体力・名前・名義・名称・名簿 等）の先頭字と
+# 偶発一致しうる（例:「10名前」「5体験」の一部を数量表記と誤認する）。マッチ直後に
+# 続く1文字がこれら熟語の後続字であれば、数量表記ではなく熟語の一部とみなして除外
+# する（「エージェント」はカタカナ語であり他語の一部として偶発一致するリスクが
+# 実質的にないため対象外。既存の SECRET_PLACEHOLDER_RE と同様、既知の紛らわしい
+# 語のみを対象にした狭い除外リストで対応する設計）。
+AGENT_COUNT_WORD_CONTINUATION_RE='^(験|重|格|温|力|調|前|義|称|簿)'
+
+# $1=マッチした文字列全体（例: "10名"） $2=マッチ直後に続く残り文字列
+# 「名」「体」で終わるマッチのみを対象に、直後の1文字が既知の熟語後続字なら
+# true（除外対象）を返す。
+is_agent_count_word_continuation() {
+  local matched="$1" trailing="$2"
+  case "$matched" in
+    *名|*体)
+      [[ "$trailing" =~ $AGENT_COUNT_WORD_CONTINUATION_RE ]] && return 0
+      ;;
+  esac
+  return 1
+}
+
+# (a) .claude-plugin/*.json の description フィールドへの数値混入チェック。
+# JSON専用パーサ（jq等）は本スクリプトの既存方針（追加ランタイム非依存）により
+# 導入せず、他セクション同様の単純な行単位の正規表現照合で行毎処理する
+# （description値に改行・エスケープ済みダブルクォートを含まない前提。
+#   本リポジトリの実ファイルはこの前提を満たす単純な一行の文字列値のみ。
+#   qa-review差し戻し(1回目) [nit 6]: この前提が崩れるリスクは低いため記録のみとし、
+#   複雑なJSON文字列アンエスケープの実装は見送る）。
+#
+# qa-review差し戻し(1回目) [should-fix 4] と同種の理由により、bash の
+# `[[ desc =~ pattern ]]`（leftmost一致のみ）に頼らず、`${rest#*"$matched"}` で
+# マッチ済み部分を順に取り除きながら再マッチさせることで、1つの description 内に
+# 複数の候補が出現しても取りこぼさない。
+check_json_description_no_agent_count() {
+  local file="$1" rel="$2"
+  [ -f "$file" ] || return 0
+  local line lineno=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    lineno=$((lineno + 1))
+    if [[ "$line" =~ \"description\"[[:space:]]*:[[:space:]]*\"(.*)\" ]]; then
+      local desc="${BASH_REMATCH[1]}"
+      local rest="$desc"
+      while [[ "$rest" =~ $AGENT_COUNT_CANDIDATE_RE ]]; do
+        local matched="${BASH_REMATCH[0]}"
+        rest="${rest#*"$matched"}"
+        if is_agent_count_word_continuation "$matched" "$rest"; then
+          continue
+        fi
+        add_issue 'ERROR' 'plugin-desc-agent-count' "${rel}:${lineno}" \
+          "description に数値によるエージェント数表記 '${matched}' が含まれています（数値非依存の表現へ統一する方針。例:「10グループの専門家エージェント」）"
+        PLUGIN_DESC_AGENT_COUNT_HITS=$((PLUGIN_DESC_AGENT_COUNT_HITS + 1))
+      done
+    fi
+  done < "$file"
+}
+
+PLUGIN_DESC_AGENT_COUNT_HITS=0
+check_json_description_no_agent_count "$REPO_ROOT/.claude-plugin/marketplace.json" '.claude-plugin/marketplace.json'
+check_json_description_no_agent_count "$REPO_ROOT/.claude-plugin/plugin.json" '.claude-plugin/plugin.json'
+
+# (b) DESIGN.md/DEVELOPMENT.md の現在値としてのエージェント数表記と実体との突合。
+#
+# 設計判断（重要）: 「N体/N名という表記全般を総エージェント数とみなして実体と
+# 突合する」という汎用実装は採らない。DESIGN.md内には総数とは無関係な別の数値
+# 表記（例:「9体の `*-lead`」＝リーダー数、「非リーダー41体」＝非リーダー数）が
+# 現に存在し、汎用突合ではこれらを誤って総数(51)と比較し誤検知してしまう。
+# そのため、各ファイルで実際に総数表記として使われている特定の言い回し
+# （DESIGN.mdの「Nグループ・M名」＝README冒頭表記と同一の慣用句、
+#   DEVELOPMENT.mdの「エージェント定義（N体」）のみを対象にした狭いパターンで
+# 突合する。この設計により、時点明示付きの履歴記述（例:「当時（49体時点）」）は
+# パターン形状が異なるため自然に対象外となり、除外のための個別のキーワード
+# 判定（「当時」「時点」等の除外リスト）は不要になる。
+# 該当パターンが1件も見つからない場合はERRORにはせず静かにスキップする
+# （表記の存在自体を必須要件とはしない。存在する場合にのみ実体との一致を問う）。
+#
+# qa-review差し戻し(1回目) [should-fix 4] への対応: ファイル全文を1つの文字列として
+# `[[ text =~ pattern ]]` に渡すとleftmost（最初の一致）しか得られず、狙いの現在値
+# 記述より前に同形状のパターンが別文脈で出現した場合にそちらを誤って拾ってしまう
+# （本来検証すべき記述を取りこぼす）リスクがある。1行ずつ読み、各行内でも
+# `${rest#*"${BASH_REMATCH[0]}"}` により順に取り除きながら再マッチさせることで、
+# ファイル中の全出現を行番号付きで検証する（出現順に依存しない）。
+# qa-review差し戻し(1回目) [should-fix 3] への対応: セクション4（README冒頭の
+# 「Nグループ・M名」突合）がグループ数・エージェント数を各1件のERRORとして分離
+# 記録しているのに合わせ、DESIGN.mdの突合も両者を独立した add_issue に分離する。
+DOC_AGENT_TOTAL=${#AGENT_NAMES_FROM_FILES[@]}
+declare -A DOC_GROUP_SET=()
+if [ "${#AGENT_NAMES_FROM_FILES[@]}" -gt 0 ]; then
+  for n in "${AGENT_NAMES_FROM_FILES[@]}"; do
+    DOC_GROUP_SET["${n%%-*}"]=1
+  done
+fi
+DOC_GROUP_TOTAL=${#DOC_GROUP_SET[@]}
+
+DESIGN_COUNT_MISMATCH_HITS=0
+DESIGN_MD_PATH="$REPO_ROOT/DESIGN.md"
+if [ -f "$DESIGN_MD_PATH" ]; then
+  design_lineno=0
+  while IFS= read -r design_line || [ -n "$design_line" ]; do
+    design_lineno=$((design_lineno + 1))
+    design_rest="$design_line"
+    while [[ "$design_rest" =~ ([0-9]+)グループ・([0-9]+)名 ]]; do
+      design_stated_groups="${BASH_REMATCH[1]}"
+      design_stated_agents="${BASH_REMATCH[2]}"
+      design_rest="${design_rest#*"${BASH_REMATCH[0]}"}"
+      if [ "$design_stated_groups" -ne "$DOC_GROUP_TOTAL" ]; then
+        add_issue 'ERROR' 'doc-agent-count-mismatch' "DESIGN.md:${design_lineno}" \
+          "DESIGN.md記載の「Nグループ・M名」のグループ数 '${design_stated_groups}' が実体のグループ数 '${DOC_GROUP_TOTAL}' と一致しません"
+        DESIGN_COUNT_MISMATCH_HITS=$((DESIGN_COUNT_MISMATCH_HITS + 1))
+      fi
+      if [ "$design_stated_agents" -ne "$DOC_AGENT_TOTAL" ]; then
+        add_issue 'ERROR' 'doc-agent-count-mismatch' "DESIGN.md:${design_lineno}" \
+          "DESIGN.md記載の「Nグループ・M名」のエージェント数 '${design_stated_agents}' が実体のエージェント数 '${DOC_AGENT_TOTAL}' と一致しません"
+        DESIGN_COUNT_MISMATCH_HITS=$((DESIGN_COUNT_MISMATCH_HITS + 1))
+      fi
+    done
+  done < "$DESIGN_MD_PATH"
+fi
+
+DEVELOPMENT_COUNT_MISMATCH_HITS=0
+DEVELOPMENT_MD_PATH="$REPO_ROOT/DEVELOPMENT.md"
+if [ -f "$DEVELOPMENT_MD_PATH" ]; then
+  development_lineno=0
+  while IFS= read -r development_line || [ -n "$development_line" ]; do
+    development_lineno=$((development_lineno + 1))
+    development_rest="$development_line"
+    while [[ "$development_rest" =~ エージェント定義（([0-9]+)体 ]]; do
+      development_stated_agents="${BASH_REMATCH[1]}"
+      development_rest="${development_rest#*"${BASH_REMATCH[0]}"}"
+      if [ "$development_stated_agents" -ne "$DOC_AGENT_TOTAL" ]; then
+        add_issue 'ERROR' 'doc-agent-count-mismatch' "DEVELOPMENT.md:${development_lineno}" \
+          "DEVELOPMENT.md記載の「エージェント定義（N体」の値 '${development_stated_agents}' が実体のエージェント数 '${DOC_AGENT_TOTAL}' と一致しません"
+        DEVELOPMENT_COUNT_MISMATCH_HITS=$((DEVELOPMENT_COUNT_MISMATCH_HITS + 1))
+      fi
+    done
+  done < "$DEVELOPMENT_MD_PATH"
+fi
+
+# ---------------------------------------------------------------------------
 # 結果出力
 # ---------------------------------------------------------------------------
 
@@ -1159,6 +1330,7 @@ echo "mgmt-coordinator突合: 振り分け表=$COORD_TABLE_COUNT/実体=$COORD_F
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
 echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件"
+echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
 echo ''
 
 if [ "${#ISSUES[@]}" -eq 0 ]; then

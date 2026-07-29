@@ -1347,6 +1347,337 @@ EOF
   return $ok
 }
 
+# ---- エージェント数量表記の検証射程拡張（scripts/validate.sh セクション10） -----
+#
+# (a) .claude-plugin/marketplace.json・plugin.json description の数値混入検知。
+# (b) DESIGN.md「Nグループ・M名」・DEVELOPMENT.md「エージェント定義（N体」の
+#     実体との突合。base フィクスチャには .claude-plugin/*.json・DESIGN.md・
+#     DEVELOPMENT.md を意図的に含めていない（対象ファイル不在時は静かにスキップする
+#     仕様の確認を兼ねる。他の既存テストが前提とするエージェント数・グループ数
+#     （2グループ・2名）は base フィクスチャに合わせて記述する）。
+
+test_plugin_desc_agent_count_absent_files_skipped() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # base フィクスチャには .claude-plugin/*.json・DESIGN.md・DEVELOPMENT.md が
+  # 存在しないため、セクション10由来のERRORは一切出ないこと（静かにスキップ）。
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "対象ファイル不在でもexit 0（新チェックはスキップされる）" || ok=1
+  assert_not_contains 'plugin-desc-agent-count' "plugin-desc-agent-count系ERRORが出ない" || ok=1
+  assert_not_contains 'doc-agent-count-mismatch' "doc-agent-count-mismatch系ERRORが出ない" || ok=1
+  return $ok
+}
+
+test_plugin_desc_agent_count_marketplace_reintroduced() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  mkdir -p "$dir/.claude-plugin"
+  cat > "$dir/.claude-plugin/marketplace.json" <<'EOF'
+{
+  "name": "hermit-works",
+  "owner": { "name": "bizhermit" },
+  "plugins": [
+    {
+      "name": "hw",
+      "source": "./",
+      "description": "システム開発向けの専門家エージェント組織プラグイン（49エージェント組織）"
+    }
+  ]
+}
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "数値表記の再混入はexit 1" || ok=1
+  assert_contains 'plugin-desc-agent-count' "plugin-desc-agent-countカテゴリで検知" || ok=1
+  assert_contains '.claude-plugin/marketplace.json' "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "'49エージェント'" "検出した表記自体がメッセージに含まれる" || ok=1
+  return $ok
+}
+
+test_plugin_desc_agent_count_plugin_json_reintroduced() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  mkdir -p "$dir/.claude-plugin"
+  cat > "$dir/.claude-plugin/plugin.json" <<'EOF'
+{
+  "name": "hw",
+  "displayName": "Hermit Works",
+  "description": "システム開発向けの専門家エージェント組織プラグイン（約50名のエージェントが在籍）"
+}
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "数値表記の再混入はexit 1" || ok=1
+  assert_contains 'plugin-desc-agent-count' "plugin-desc-agent-countカテゴリで検知" || ok=1
+  assert_contains '.claude-plugin/plugin.json' "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "'50名'" "検出した表記自体がメッセージに含まれる" || ok=1
+  return $ok
+}
+
+test_plugin_desc_agent_count_number_free_ok() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 数値非依存の表現（実リポジトリの現行方針）は誤検知しないこと。
+  # 「10グループ」のような数値+グループ表記自体は対象外であることの確認も兼ねる。
+  mkdir -p "$dir/.claude-plugin"
+  cat > "$dir/.claude-plugin/marketplace.json" <<'EOF'
+{
+  "name": "hermit-works",
+  "owner": { "name": "bizhermit" },
+  "plugins": [
+    {
+      "name": "hw",
+      "source": "./",
+      "description": "システム開発向けの専門家エージェント組織プラグイン（10グループの専門家エージェント組織）"
+    }
+  ]
+}
+EOF
+  cat > "$dir/.claude-plugin/plugin.json" <<'EOF'
+{
+  "name": "hw",
+  "displayName": "Hermit Works",
+  "description": "10グループの専門家エージェントが作業を分担するプラグイン。"
+}
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "数値非依存の表現はexit 0" || ok=1
+  assert_not_contains 'plugin-desc-agent-count' "plugin-desc-agent-countが誤検知されない" || ok=1
+  return $ok
+}
+
+test_plugin_desc_agent_count_word_continuation_not_false_positive() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # qa-review差し戻し(1回目) [should-fix 2] への対応確認: 「体」「名」は日本語の
+  # 熟語（体験・名前 等）の先頭字と偶発一致しうる。数値の直後に熟語の後続字が
+  # 続く場合は数量表記ではないと判定し、誤検知しないこと。
+  mkdir -p "$dir/.claude-plugin"
+  cat > "$dir/.claude-plugin/marketplace.json" <<'EOF'
+{
+  "name": "hermit-works",
+  "owner": { "name": "bizhermit" },
+  "plugins": [
+    {
+      "name": "hw",
+      "source": "./",
+      "description": "10名前変更や5体験版の提供を含む、専門家エージェント組織プラグイン"
+    }
+  ]
+}
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "熟語との偶発一致は誤検知されずexit 0" || ok=1
+  assert_not_contains 'plugin-desc-agent-count' "「名前」「体験」への偶発一致が誤検知されない" || ok=1
+  return $ok
+}
+
+test_plugin_desc_agent_count_multiple_occurrences_all_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # qa-review差し戻し(1回目) [should-fix 4] と同種の理由により、1つの description
+  # 内に複数の数値表記が出現する場合も、leftmost（最初の1件）だけでなく全件を
+  # 検知すること。
+  mkdir -p "$dir/.claude-plugin"
+  cat > "$dir/.claude-plugin/marketplace.json" <<'EOF'
+{
+  "name": "hermit-works",
+  "owner": { "name": "bizhermit" },
+  "plugins": [
+    {
+      "name": "hw",
+      "source": "./",
+      "description": "49エージェントから始まり現在は約50名が在籍する組織"
+    }
+  ]
+}
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "複数出現もexit 1" || ok=1
+  assert_contains "'49エージェント'" "1件目の表記が検知される" || ok=1
+  assert_contains "'50名'" "2件目の表記が検知される" || ok=1
+  # カテゴリ名は出力上「--- category ---」の見出しとして1回しか現れないため、
+  # 個々のissue行数ではなく合計ERROR件数（2件とも独立集計されていること）で確認する。
+  assert_contains 'ERROR: 2 件' "2件とも独立して検知される（合計2件）" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_design_mismatch_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # base フィクスチャの実体は2グループ・2名（eng-backend, qa-test）。
+  # qa-review差し戻し(1回目) [should-fix 3] への対応確認: グループ数不一致・
+  # エージェント数不一致がそれぞれ独立したERRORとして分離記録されること
+  # （セクション4のREADME突合と同じ粒度）。
+  cat > "$dir/DESIGN.md" <<'EOF'
+# DESIGN
+
+本プラグインは、単一の汎用エージェントに全業務を担わせるのではなく、3グループ・5名の
+専門家エージェントに役割を分割し、「組織」としてモデル化している。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "DESIGN.mdの数値不一致はexit 1" || ok=1
+  assert_contains 'doc-agent-count-mismatch' "doc-agent-count-mismatchカテゴリで検知" || ok=1
+  assert_contains 'DESIGN.md:3' "対象ファイル・行番号が出力に含まれる" || ok=1
+  assert_contains "グループ数 '3' が実体のグループ数 '2' と一致しません" "グループ数不一致メッセージ" || ok=1
+  assert_contains "エージェント数 '5' が実体のエージェント数 '2' と一致しません" "エージェント数不一致メッセージ" || ok=1
+  # グループ数不一致・エージェント数不一致がそれぞれ独立した1件のERRORであること
+  # （合算された1件のERRORになっていないこと）を、合計ERROR件数で確認する
+  # （カテゴリ名は出力上「--- category ---」の見出しとして1回しか現れないため、
+  #   カテゴリ名を含む行数ではなく合計件数で判定する）。
+  assert_contains 'ERROR: 2 件' "グループ数・エージェント数の不一致が各1件、計2件のERRORに分離される" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_design_multiple_occurrences_historical_first() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # qa-review差し戻し(1回目) [should-fix 4] への対応確認: 「Nグループ・M名」の
+  # 出現が複数あり、かつ本来の現在値記述より前に別文脈（食い違う値）の出現がある
+  # 場合でも、leftmost一致だけに頼らず全出現を検証すること（前段の出現の不一致を
+  # 正しく検知しつつ、後段の正しい出現を誤って不一致扱いしない）。
+  cat > "$dir/DESIGN.md" <<'EOF'
+# DESIGN
+
+（旧版からの引用、9グループ・42名の体制だった時期の記述がここに残っている。）
+
+本プラグインは、単一の汎用エージェントに全業務を担わせるのではなく、2グループ・2名の
+専門家エージェントに役割を分割し、「組織」としてモデル化している。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "先行する不一致出現はexit 1" || ok=1
+  assert_contains "グループ数 '9' が実体のグループ数 '2' と一致しません" "先行出現（9グループ）の不一致が検知される" || ok=1
+  assert_contains "エージェント数 '42' が実体のエージェント数 '2' と一致しません" "先行出現（42名）の不一致が検知される" || ok=1
+  # 後段の正しい出現（2グループ・2名）については不一致が出ないこと（合計ERROR件数で確認）。
+  assert_contains 'ERROR: 2 件' "先行出現の2件のみが不一致として記録される（後段の正しい出現は0件）" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_design_multiple_occurrences_later_mismatch_not_missed() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # qa-review差し戻し(1回目) [should-fix 4] の核心的な回帰確認: 1件目（leftmost）が
+  # 実体と一致していても、2件目以降に不一致があれば取りこぼさずに検知すること
+  # （leftmost一致のみに頼る実装だと、1件目が一致した時点で以降を確認せず
+  #   見逃してしまう＝偽陰性のリグレッションテスト）。
+  cat > "$dir/DESIGN.md" <<'EOF'
+# DESIGN
+
+本プラグインは、単一の汎用エージェントに全業務を担わせるのではなく、2グループ・2名の
+専門家エージェントに役割を分割し、「組織」としてモデル化している。
+
+（別章での言及、3グループ・7名という古い数値が更新漏れで残っている。）
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "2件目以降の不一致もexit 1として検知される" || ok=1
+  assert_contains "グループ数 '3' が実体のグループ数 '2' と一致しません" "2件目出現（3グループ）の不一致が検知される" || ok=1
+  assert_contains "エージェント数 '7' が実体のエージェント数 '2' と一致しません" "2件目出現（7名）の不一致が検知される" || ok=1
+  assert_contains 'ERROR: 2 件' "2件目出現の2件のみが不一致として記録される（1件目の一致は0件）" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_design_match_ok() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  cat > "$dir/DESIGN.md" <<'EOF'
+# DESIGN
+
+本プラグインは、単一の汎用エージェントに全業務を担わせるのではなく、2グループ・2名の
+専門家エージェントに役割を分割し、「組織」としてモデル化している。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "実体と一致していればexit 0" || ok=1
+  assert_not_contains 'doc-agent-count-mismatch' "doc-agent-count-mismatchが誤検知されない" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_design_pattern_absent_in_existing_file() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # qa-review差し戻し(1回目) [nit 5] への対応: DESIGN.md自体は存在するが、
+  # 「Nグループ・M名」のパターンを一切含まないケース（ファイル不在時のスキップとは
+  # 別に、ファイルは存在するがパターンが見つからない場合も静かにスキップすること）。
+  cat > "$dir/DESIGN.md" <<'EOF'
+# DESIGN
+
+このドキュメントには数量表記が一切含まれていない。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "パターン不在はexit 0（静かにスキップ）" || ok=1
+  assert_not_contains 'doc-agent-count-mismatch' "doc-agent-count-mismatchが出ない" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_design_historical_mention_not_flagged() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 実体と一致する現在値表記に加え、時点明示付きの履歴記述（別の母数）が
+  # 共存していても、後者は誤検知されないこと（パターン形状が異なるため対象外）。
+  cat > "$dir/DESIGN.md" <<'EOF'
+# DESIGN
+
+本プラグインは、単一の汎用エージェントに全業務を担わせるのではなく、2グループ・2名の
+専門家エージェントに役割を分割し、「組織」としてモデル化している。
+
+**検討時に退けた代替案**:
+- `mgmt-pm` の降格維持: 当時（49体時点）の再評価では、と判断した（履歴記述）。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "履歴記述は誤検知されずexit 0" || ok=1
+  assert_not_contains 'doc-agent-count-mismatch' "履歴記述の母数(49)は現在値と突合されない" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_development_mismatch_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  cat > "$dir/DEVELOPMENT.md" <<'EOF'
+# DEVELOPMENT
+
+```
+hermit-works/
+├── agents/                      # 専門家エージェント定義（5体、グループ別プレフィックス）
+```
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "DEVELOPMENT.mdの数値不一致はexit 1" || ok=1
+  assert_contains 'doc-agent-count-mismatch' "doc-agent-count-mismatchカテゴリで検知" || ok=1
+  assert_contains 'DEVELOPMENT.md:5' "対象ファイル・行番号が出力に含まれる" || ok=1
+  assert_contains "の値 '5' が実体のエージェント数 '2' と一致しません" "不一致メッセージ" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_development_match_ok() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  cat > "$dir/DEVELOPMENT.md" <<'EOF'
+# DEVELOPMENT
+
+```
+hermit-works/
+├── agents/                      # 専門家エージェント定義（2体、グループ別プレフィックス）
+```
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "実体と一致していればexit 0" || ok=1
+  assert_not_contains 'doc-agent-count-mismatch' "doc-agent-count-mismatchが誤検知されない" || ok=1
+  return $ok
+}
+
+test_doc_agent_count_development_pattern_absent_in_existing_file() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # qa-review差し戻し(1回目) [nit 5] への対応: DEVELOPMENT.md自体は存在するが、
+  # 「エージェント定義（N体」のパターンを一切含まないケース。
+  cat > "$dir/DEVELOPMENT.md" <<'EOF'
+# DEVELOPMENT
+
+このドキュメントには数量表記が一切含まれていない。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "パターン不在はexit 0（静かにスキップ）" || ok=1
+  assert_not_contains 'doc-agent-count-mismatch' "doc-agent-count-mismatchが出ない" || ok=1
+  return $ok
+}
+
 # ---- 本体リポジトリの回帰確認 ---------------------------------------------------
 
 test_real_repo_still_passes() {
@@ -1407,6 +1738,21 @@ run_test test_disallowed_tools_leader_exempt
 run_test test_leader_name_spoof_not_exempted
 run_test test_disallowed_tools_allowlist_exempt
 run_test test_guideline_tk2_e1_missing_detected
+run_test test_plugin_desc_agent_count_absent_files_skipped
+run_test test_plugin_desc_agent_count_marketplace_reintroduced
+run_test test_plugin_desc_agent_count_plugin_json_reintroduced
+run_test test_plugin_desc_agent_count_number_free_ok
+run_test test_plugin_desc_agent_count_word_continuation_not_false_positive
+run_test test_plugin_desc_agent_count_multiple_occurrences_all_detected
+run_test test_doc_agent_count_design_mismatch_detected
+run_test test_doc_agent_count_design_multiple_occurrences_historical_first
+run_test test_doc_agent_count_design_multiple_occurrences_later_mismatch_not_missed
+run_test test_doc_agent_count_design_match_ok
+run_test test_doc_agent_count_design_pattern_absent_in_existing_file
+run_test test_doc_agent_count_design_historical_mention_not_flagged
+run_test test_doc_agent_count_development_mismatch_detected
+run_test test_doc_agent_count_development_match_ok
+run_test test_doc_agent_count_development_pattern_absent_in_existing_file
 run_test test_real_repo_still_passes
 
 echo '==================================================='
