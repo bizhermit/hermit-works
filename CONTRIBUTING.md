@@ -518,10 +518,16 @@ description: <この手順が何をするものか>。<どんなときに使う�
    完了報告前に必ずこちらも実行し、全ケースPASSであることを確認してください。
 
    同様に、`scripts/git-changelog.sh` を変更した場合は `bash scripts/tests/run-git-changelog-tests.sh`
-   （qa-test整備）を実行し、全ケースPASSであることを確認してください。回帰テストが共有する共通
-   ライブラリ（`scripts/tests/lib/` 配下）を変更した場合は、影響が両ハーネスに及ぶため
-   `bash scripts/tests/run-tests.sh` と `bash scripts/tests/run-git-changelog-tests.sh` の両方を
-   実行し、全ケースPASSであることを確認してください。
+   （qa-test整備）を、`scripts/aggregate-agent-token-usage.sh` を変更した場合は
+   `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`（qa-test整備）を実行し、全ケース
+   PASSであることを確認してください。回帰テストが共有する共通ライブラリ（`scripts/tests/lib/` 配下）
+   を変更した場合は、影響が lib/ を共有する全ハーネスに及ぶため、以下の全ハーネスを実行し、
+   全ケースPASSであることを確認してください（新たなハーネスを追加した場合は、本リストと8.4の
+   該当箇所を同時に更新してください）。
+
+   - `bash scripts/tests/run-tests.sh`
+   - `bash scripts/tests/run-git-changelog-tests.sh`
+   - `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`
 
    回帰テストを新設すべきかの判断基準と配置は8.4を参照してください。
 
@@ -640,8 +646,9 @@ description: <この手順が何をするものか>。<どんなときに使う�
 
 - ハーネス名は `run-<対象>-tests.sh` とする（8.2参照）
 - アサーション等の共通処理は `scripts/tests/lib/` を `source` して使い、ハーネスごとに再実装しない
-- `scripts/tests/lib/` 配下の変更は影響が全ハーネスに及ぶため、両方のハーネスを実行して確認する
-  （5章の定めに従う）
+- `scripts/tests/lib/` 配下の変更は影響が lib/ を共有する全ハーネスに及ぶため、5章に列挙された
+  全ハーネスを実行して確認する（現行のハーネス一覧・合格基準は5章参照。ハーネス追加時は5章の
+  一覧も同時に更新する）
 - テスト用の入力データ・期待値等の固定データは `scripts/tests/fixtures/` に置く
 - 合格基準は全ケース PASS とする（正本は5章）
 

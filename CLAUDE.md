@@ -25,7 +25,10 @@ claude plugin validate .
 bash scripts/validate.sh
 # scripts/validate.sh 自体を変更した場合のみ（合格基準: 全ケース PASS。正本は CONTRIBUTING.md 5章）
 bash scripts/tests/run-tests.sh
-# scripts/git-changelog.sh 変更時、または scripts/tests/lib/ 配下（両ハーネス共通ライブラリ）変更時のみ
-# （lib/ 変更時は上記 run-tests.sh も併せて実行。詳細・合格基準は正本 CONTRIBUTING.md 5章）
+# scripts/git-changelog.sh 変更時のみ
 bash scripts/tests/run-git-changelog-tests.sh
+# scripts/aggregate-agent-token-usage.sh 変更時のみ
+bash scripts/tests/run-aggregate-agent-token-usage-tests.sh
+# scripts/tests/lib/ 配下（全ハーネス共通ライブラリ）変更時は上記の全ハーネスを実行
+# （詳細・合格基準・現行の一覧は正本 CONTRIBUTING.md 5章）
 ```
