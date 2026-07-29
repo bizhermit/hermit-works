@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "hermit-works": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
+  },
+  "enabledPlugins": {
+    "hw@hermit-works": true
+  }
+}

@@ -1,0 +1,35 @@
+# OS生成物
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# エディタ設定
+.vscode/
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# 一時ファイル・ログ
+*.log
+*.tmp
+*.temp
+*.bak
+
+# env
+.env
+.env.*
+!.env.example
+
+# Claude Code のローカル設定・個人権限設定（環境依存のため共有しない）
+.claude/settings.local.json
+
+# hermit-works の作業ディレクトリ（案件ごとの計画・成果物。環境ローカルのため共有しない）
+.hw/
