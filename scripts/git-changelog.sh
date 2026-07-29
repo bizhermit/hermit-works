@@ -76,6 +76,21 @@ if [ -z "$FROM_REF" ]; then
   FROM_REF="$(git -C "$REPO_ROOT" describe --tags --abbrev=0 2>/dev/null || true)"
 fi
 
+# FROM_REF/TO_REF が `-` で始まる値の場合、後段の `git log` にオプションとして誤解釈
+# されるおそれがあるため拒否する（git-cleanup-branch.sh の is_safe_branch_name と同様の
+# 防御。空文字列は上記の自動検出フォールバックのため引き続き許容する）。
+reject_dash_prefixed_ref() {
+  local label="$1" value="$2"
+  case "$value" in
+    -*)
+      echo "Error: ${label} に '-' で始まる値は指定できません: ${value}" >&2
+      exit 1
+      ;;
+  esac
+}
+reject_dash_prefixed_ref "FROM_REF" "$FROM_REF"
+reject_dash_prefixed_ref "TO_REF" "$TO_REF"
+
 RANGE="$TO_REF"
 if [ -n "$FROM_REF" ]; then
   RANGE="${FROM_REF}..${TO_REF}"

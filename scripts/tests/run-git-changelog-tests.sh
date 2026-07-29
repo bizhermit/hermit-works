@@ -170,6 +170,26 @@ test_invalid_from_ref_errors() {
   return $ok
 }
 
+test_dash_prefixed_from_ref_rejected() {
+  new_git_repo; local d="$NEW_REPO_DIR"
+  commit_in "$d" "feat: 何か"
+  run_changelog_in_repo "$d" --exec=id HEAD
+  local ok=0
+  assert_exit 1 "'-'始まりのFROM_REFはexit 1" || ok=1
+  assert_contains "'-' で始まる値は指定できません" "拒否メッセージが出る" || ok=1
+  return $ok
+}
+
+test_dash_prefixed_to_ref_rejected() {
+  new_git_repo; local d="$NEW_REPO_DIR"
+  commit_in "$d" "feat: 何か"
+  run_changelog_in_repo "$d" HEAD --exec=id
+  local ok=0
+  assert_exit 1 "'-'始まりのTO_REFはexit 1" || ok=1
+  assert_contains "'-' で始まる値は指定できません" "拒否メッセージが出る" || ok=1
+  return $ok
+}
+
 test_non_git_directory_errors() {
   local d
   d="$(mktemp -d)"
@@ -192,6 +212,8 @@ run_test test_empty_range_reports_no_commits
 run_test test_from_to_range_option
 run_test test_path_filter_option
 run_test test_invalid_from_ref_errors
+run_test test_dash_prefixed_from_ref_rejected
+run_test test_dash_prefixed_to_ref_rejected
 run_test test_non_git_directory_errors
 
 finish_test_run
