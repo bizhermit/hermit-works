@@ -85,7 +85,17 @@ fi
 # git log 取得（1行1コミット、"<hash>\t<date>\t<subject>" 形式）
 # ---------------------------------------------------------------------------
 
-LOG_OUTPUT="$(git -C "$REPO_ROOT" log --no-merges --date=short --pretty=format:'%h%x09%ad%x09%s' "$RANGE" -- "${PATHS[@]}" 2>/dev/null || true)"
+# git log の終了コードを検査する。存在しないref/範囲指定などで失敗した場合に、
+# それを握りつぶして「対象範囲に変更コミットはありません」という誤った成功メッセージ
+# （exit 0）を出さないよう、ここでエラーを検出してexit 1する
+# （2>&1で標準エラーもLOG_OUTPUTに含めて診断に使う。失敗時のみ出力する）。
+if ! LOG_OUTPUT="$(git -C "$REPO_ROOT" log --no-merges --date=short --pretty=format:'%h%x09%ad%x09%s' "$RANGE" -- "${PATHS[@]}" 2>&1)"; then
+  echo "Error: git log の実行に失敗しました。範囲指定 '${RANGE}' を確認してください。" >&2
+  if [ -n "$LOG_OUTPUT" ]; then
+    echo "$LOG_OUTPUT" >&2
+  fi
+  exit 1
+fi
 
 if [ -z "$LOG_OUTPUT" ]; then
   echo "対象範囲に変更コミットはありません（範囲: ${RANGE}）。"

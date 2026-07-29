@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# git リポジトリ外での実行を早期に検出する（git-changelog.sh と同様のチェック）。
+# これが無いと、git リポジトリ外では後段の `git status --porcelain` が空出力を返し
+# 「クリーン」と誤判定されたまま、分かりにくい箇所で失敗する。
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "Error: 現在のディレクトリは git リポジトリではありません。" >&2
+  exit 1
+fi
+
 target_branch="${1:-}"
 
 # 作業ディレクトリがクリーンかチェック
@@ -54,7 +62,7 @@ else
   git switch --track -c "$target_branch" -- "$remote_target_branch"
 fi
 
-git merge --ff-only "@{u}"
+git merge --ff-only "$remote_target_branch"
 
 # 削除対象ブランチ抽出
 if ! gone_branches=$(
@@ -71,7 +79,10 @@ if [ -z "$gone_branches" ]; then
 else
   echo
   echo "Deleting branches:"
-  echo "$gone_branches" | while IFS= read -r branch; do
+  # パイプ経由（... | while）だとwhileがサブシェルで実行され、ループ内での変数更新が
+  # 外側に反映されなくなる（本スクリプトでは実害はないが、他スクリプトの回避方針と
+  # 揃えるため <<< 方式にする）。
+  while IFS= read -r branch; do
     # 空行対策
     if [ -n "$branch" ]; then
       echo "  - $branch"
@@ -83,7 +94,7 @@ else
         echo "    Failed (maybe not fully merged)"
       fi
     fi
-  done
+  done <<< "$gone_branches"
 fi
 
 echo

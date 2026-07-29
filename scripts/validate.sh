@@ -467,111 +467,95 @@ join_comma() {
   printf '%s' "$result"
 }
 
-# README一覧と実ファイル一覧を突合する。差分があればERRORを記録する。
-# 結果件数はグローバル変数 CMP_README_COUNT / CMP_FILE_COUNT に格納する
-# （関数をコマンド置換 $(...) 内で呼ぶと ISSUES への追記がサブシェル内に閉じ込められて
-#   失われるため、戻り値はグローバル変数経由で受け渡す）。
-compare_readme_to_files() {
+# 名前集合（左側集合 vs 実ファイル集合）を突合する汎用関数。差分があればERRORを記録する。
+#
+# 統合の経緯（M15是正。eng-lead承認済みの実装方針に厳密に従う）: 元は README用の
+# compare_readme_to_files と mgmt-coordinator用の compare_coordinator_to_files の
+# 2関数に分かれていたが、約45行がほぼ完全重複しており片側のみ修正されるドリフトの
+# リスクがあったため、本関数へ統合した。呼び出し側の違い（ラベル・カテゴリ・
+# 対象ファイル・突合先の呼称）はすべて引数で表現する。
+#
+# 引数:
+#   $1 label         : メッセージ先頭に付ける接頭辞（例:「エージェント一覧」「コマンド一覧」）。
+#                       空文字列を渡した場合は接頭辞（"${label}: "）を付けない。
+#                       これにより、元コードで非対称だった2種類のメッセージ文字列
+#                       （README側は "${label}: " 付き、mgmt-coordinator側は接頭辞なし）を、
+#                       単一の実装のままバイト同一で再現する。
+#   $2 category      : add_issue の第2引数（例: 'readme-sync' / 'coordinator-sync'）。
+#   $3 target_file   : add_issue の第3引数（例: 'README.md' / 'agents/mgmt-coordinator.md'）。
+#   $4 listing_noun  : 突合先の呼称（例: 'README一覧' / '振り分け表'）。メッセージ文中の
+#                       「〜に記載がない」「〜に記載があるが」の主語として使う。
+#   $5 左側集合の配列（nameref）: README側トークン一覧 / mgmt-coordinator振り分け表トークン一覧 等。
+#   $6 実ファイル一覧の配列（nameref）。
+#
+# nameref のローカル名 _cmp_left_arr / _cmp_files_arr は、呼び出し側の実引数名
+# （README_AGENT_TOKENS・COMMAND_NAMES_FROM_FILES・AGENT_NAMES_FROM_FILES・
+#   COORDINATOR_AGENT_TOKENS 等）のいずれとも衝突しない名前にしてある
+# （nameref循環参照回避。元の _readme_arr / _coord_arr / _files_arr 方式を踏襲）。
+#
+# 結果件数はグローバル変数 CMP_LEFT_COUNT / CMP_FILE_COUNT に格納する（本関数を
+# コマンド置換 $(...) 内で呼ぶと ISSUES への追記がサブシェル内に閉じ込められて
+# 失われるため、戻り値はグローバル変数経由で受け渡す。元の2関数それぞれが個別に
+# 持っていた同種の設計判断を統合後も引き継ぐ）。
+#
+# mgmt-coordinator突合での呼び出し前提（元 compare_coordinator_to_files のコメントを
+# 引き継ぐ）: mgmt-coordinator 自身は振り分け表に自己記載されない（自分自身への
+# 振り分けはないため）前提で、呼び出し側が左側集合（振り分け表トークン）に
+# 'mgmt-coordinator' を明示的に加えたうえで本関数へ渡す（詳細は呼び出し箇所のコメント参照）。
+compare_name_sets() {
   local label="$1"
-  local -n _readme_arr="$2"
-  local -n _files_arr="$3"
+  local category="$2"
+  local target_file="$3"
+  local listing_noun="$4"
+  local -n _cmp_left_arr="$5"
+  local -n _cmp_files_arr="$6"
 
-  local -A readme_set=()
+  local prefix=""
+  if [ -n "$label" ]; then
+    prefix="${label}: "
+  fi
+
+  local -A left_set=()
   local -A file_set=()
   local n
 
-  if [ "${#_readme_arr[@]}" -gt 0 ]; then
-    for n in "${_readme_arr[@]}"; do readme_set["$n"]=1; done
+  if [ "${#_cmp_left_arr[@]}" -gt 0 ]; then
+    for n in "${_cmp_left_arr[@]}"; do left_set["$n"]=1; done
   fi
-  if [ "${#_files_arr[@]}" -gt 0 ]; then
-    for n in "${_files_arr[@]}"; do file_set["$n"]=1; done
+  if [ "${#_cmp_files_arr[@]}" -gt 0 ]; then
+    for n in "${_cmp_files_arr[@]}"; do file_set["$n"]=1; done
   fi
 
-  local missing_in_readme=() missing_in_files=()
+  local missing_in_left=() missing_in_files=()
   if [ "${#file_set[@]}" -gt 0 ]; then
     for n in "${!file_set[@]}"; do
-      if [ -z "${readme_set[$n]+x}" ]; then missing_in_readme+=("$n"); fi
+      if [ -z "${left_set[$n]+x}" ]; then missing_in_left+=("$n"); fi
     done
   fi
-  if [ "${#readme_set[@]}" -gt 0 ]; then
-    for n in "${!readme_set[@]}"; do
+  if [ "${#left_set[@]}" -gt 0 ]; then
+    for n in "${!left_set[@]}"; do
       if [ -z "${file_set[$n]+x}" ]; then missing_in_files+=("$n"); fi
     done
   fi
 
-  if [ "${#missing_in_readme[@]}" -gt 0 ]; then
+  if [ "${#missing_in_left[@]}" -gt 0 ]; then
     local sorted_str
-    sorted_str="$(printf '%s\n' "${missing_in_readme[@]}" | LC_ALL=C sort)"
+    sorted_str="$(printf '%s\n' "${missing_in_left[@]}" | LC_ALL=C sort)"
     local -a sorted=()
     while IFS= read -r n; do sorted+=("$n"); done <<< "$sorted_str"
-    add_issue 'ERROR' 'readme-sync' 'README.md' \
-      "${label}: 実ファイルには存在するがREADME一覧に記載がない → $(join_comma "${sorted[@]}")"
+    add_issue 'ERROR' "$category" "$target_file" \
+      "${prefix}実ファイルには存在するが${listing_noun}に記載がない → $(join_comma "${sorted[@]}")"
   fi
   if [ "${#missing_in_files[@]}" -gt 0 ]; then
     local sorted_str
     sorted_str="$(printf '%s\n' "${missing_in_files[@]}" | LC_ALL=C sort)"
     local -a sorted=()
     while IFS= read -r n; do sorted+=("$n"); done <<< "$sorted_str"
-    add_issue 'ERROR' 'readme-sync' 'README.md' \
-      "${label}: README一覧に記載があるが実ファイルが存在しない → $(join_comma "${sorted[@]}")"
+    add_issue 'ERROR' "$category" "$target_file" \
+      "${prefix}${listing_noun}に記載があるが実ファイルが存在しない → $(join_comma "${sorted[@]}")"
   fi
 
-  CMP_README_COUNT=${#readme_set[@]}
-  CMP_FILE_COUNT=${#file_set[@]}
-}
-
-# agents/mgmt-coordinator.md の「組織構成（振り分け先）」表と実ファイル一覧を突合する。
-# 差分があればERRORを記録する。compare_readme_to_files と同様の構造だが、
-# 対象が異なるためメッセージ文言（"振り分け表"）を分けた専用関数にしている。
-# mgmt-coordinator 自身は振り分け表に自己記載されない（自分自身への振り分けはないため）
-# 前提で、呼び出し側で実ファイル側にのみ mgmt-coordinator を含めて比較する。
-# 結果件数はグローバル変数 CMP_COORD_COUNT / CMP_FILE_COUNT に格納する（理由は
-# compare_readme_to_files 同様、コマンド置換のサブシェル問題を避けるため）。
-compare_coordinator_to_files() {
-  local -n _coord_arr="$1"
-  local -n _files_arr="$2"
-
-  local -A coord_set=()
-  local -A file_set=()
-  local n
-
-  if [ "${#_coord_arr[@]}" -gt 0 ]; then
-    for n in "${_coord_arr[@]}"; do coord_set["$n"]=1; done
-  fi
-  if [ "${#_files_arr[@]}" -gt 0 ]; then
-    for n in "${_files_arr[@]}"; do file_set["$n"]=1; done
-  fi
-
-  local missing_in_coord=() missing_in_files=()
-  if [ "${#file_set[@]}" -gt 0 ]; then
-    for n in "${!file_set[@]}"; do
-      if [ -z "${coord_set[$n]+x}" ]; then missing_in_coord+=("$n"); fi
-    done
-  fi
-  if [ "${#coord_set[@]}" -gt 0 ]; then
-    for n in "${!coord_set[@]}"; do
-      if [ -z "${file_set[$n]+x}" ]; then missing_in_files+=("$n"); fi
-    done
-  fi
-
-  if [ "${#missing_in_coord[@]}" -gt 0 ]; then
-    local sorted_str
-    sorted_str="$(printf '%s\n' "${missing_in_coord[@]}" | LC_ALL=C sort)"
-    local -a sorted=()
-    while IFS= read -r n; do sorted+=("$n"); done <<< "$sorted_str"
-    add_issue 'ERROR' 'coordinator-sync' 'agents/mgmt-coordinator.md' \
-      "実ファイルには存在するが振り分け表に記載がない → $(join_comma "${sorted[@]}")"
-  fi
-  if [ "${#missing_in_files[@]}" -gt 0 ]; then
-    local sorted_str
-    sorted_str="$(printf '%s\n' "${missing_in_files[@]}" | LC_ALL=C sort)"
-    local -a sorted=()
-    while IFS= read -r n; do sorted+=("$n"); done <<< "$sorted_str"
-    add_issue 'ERROR' 'coordinator-sync' 'agents/mgmt-coordinator.md' \
-      "振り分け表に記載があるが実ファイルが存在しない → $(join_comma "${sorted[@]}")"
-  fi
-
-  CMP_COORD_COUNT=${#coord_set[@]}
+  CMP_LEFT_COUNT=${#left_set[@]}
   CMP_FILE_COUNT=${#file_set[@]}
 }
 
@@ -580,6 +564,17 @@ compare_coordinator_to_files() {
 # ---------------------------------------------------------------------------
 
 AGENTS_DIR="$REPO_ROOT/agents"
+
+# qa-review検出(L8)への対応: agents/ ディレクトリ自体が存在しない場合、nullglobにより
+# 下記の "$AGENTS_DIR"/*.md は単に空配列になり、後続のforループも0件のまま黙って
+# 通過してしまう（「0件」なのか「ディレクトリごと不在」なのかが区別できない）。
+# README.md 不在チェック（セクション4）と対称に、ここでも専用のERRORを記録する
+# （即exitはせず、後続セクションの検知結果は握りつぶさない設計も README 同様）。
+if [ ! -d "$AGENTS_DIR" ]; then
+  add_issue 'ERROR' 'agents-dir-missing' 'agents/' \
+    "agents/ ディレクトリが見つかりません: $AGENTS_DIR （リポジトリルートの指定が正しいか確認してください。第1引数、既定はこのスクリプトの1階層上）"
+fi
+
 AGENT_FILES=("$AGENTS_DIR"/*.md)
 
 AGENT_NAMES_FROM_FILES=()
@@ -752,43 +747,53 @@ else
       '「スキル」見出しが見つからないか、直後のテーブルから hw: スキルトークンを1件も抽出できませんでした（見出し文言の変更等で検証が空振りしている可能性があります）'
   fi
 
-  compare_readme_to_files 'エージェント一覧' README_AGENT_TOKENS AGENT_NAMES_FROM_FILES
-  AGENT_README_COUNT=$CMP_README_COUNT
+  compare_name_sets 'エージェント一覧' 'readme-sync' 'README.md' 'README一覧' README_AGENT_TOKENS AGENT_NAMES_FROM_FILES
+  AGENT_README_COUNT=$CMP_LEFT_COUNT
   AGENT_FILE_COUNT=$CMP_FILE_COUNT
 
-  compare_readme_to_files 'コマンド一覧' README_COMMAND_TOKENS COMMAND_NAMES_FROM_FILES
-  CMD_README_COUNT=$CMP_README_COUNT
+  compare_name_sets 'コマンド一覧' 'readme-sync' 'README.md' 'README一覧' README_COMMAND_TOKENS COMMAND_NAMES_FROM_FILES
+  CMD_README_COUNT=$CMP_LEFT_COUNT
   CMD_FILE_COUNT=$CMP_FILE_COUNT
 
-  compare_readme_to_files 'スキル一覧' README_SKILL_TOKENS SKILL_NAMES_FROM_FILES
-  SKILL_README_COUNT=$CMP_README_COUNT
+  compare_name_sets 'スキル一覧' 'readme-sync' 'README.md' 'README一覧' README_SKILL_TOKENS SKILL_NAMES_FROM_FILES
+  SKILL_README_COUNT=$CMP_LEFT_COUNT
   SKILL_FILE_COUNT=$CMP_FILE_COUNT
 
   # README冒頭の「Nグループ・M名」記載と実数の突合
-  README_TEXT="$(printf '%s\n' "${README_LINES[@]}")"
-  if [[ "$README_TEXT" =~ ([0-9]+)グループ・([0-9]+)名 ]]; then
-    stated_groups="${BASH_REMATCH[1]}"
-    stated_agents="${BASH_REMATCH[2]}"
+  #
+  # qa-review検出(M14)への対応: 従来は README 全文を1つの文字列にしたうえで
+  # `[[ text =~ pattern ]]` に渡していたが、これはleftmost（最初の一致）しか
+  # 検出できず、記載が複数出現する場合に取りこぼす（セクション10の
+  # DESIGN.md/DEVELOPMENT.md突合で既に採用済みの問題への対処と同一の問題）。
+  # そのためセクション10と同じ「1行ずつ読み、行内でも
+  # `${rest#*"${BASH_REMATCH[0]}"}` によりマッチ済み部分を順に取り除きながら
+  # 再マッチさせる」方式に統一し、全出現を行番号に関わらず検証する。
+  agent_file_total=0
+  for f in "${AGENT_FILES[@]}"; do [ -f "$f" ] && agent_file_total=$((agent_file_total + 1)); done
 
-    agent_file_total=0
-    for f in "${AGENT_FILES[@]}"; do [ -f "$f" ] && agent_file_total=$((agent_file_total + 1)); done
+  declare -A GROUP_SET=()
+  for n in "${AGENT_NAMES_FROM_FILES[@]}"; do
+    GROUP_SET["${n%%-*}"]=1
+  done
+  actual_groups=${#GROUP_SET[@]}
 
-    if [ "$stated_agents" -ne "$agent_file_total" ]; then
-      add_issue 'ERROR' 'readme-count' 'README.md' \
-        "README冒頭記載のエージェント数 '$stated_agents' と実ファイル数 '$agent_file_total' が一致しません"
-    fi
+  for readme_count_line in "${README_LINES[@]}"; do
+    readme_count_rest="$readme_count_line"
+    while [[ "$readme_count_rest" =~ ([0-9]+)グループ・([0-9]+)名 ]]; do
+      stated_groups="${BASH_REMATCH[1]}"
+      stated_agents="${BASH_REMATCH[2]}"
+      readme_count_rest="${readme_count_rest#*"${BASH_REMATCH[0]}"}"
 
-    declare -A GROUP_SET=()
-    for n in "${AGENT_NAMES_FROM_FILES[@]}"; do
-      GROUP_SET["${n%%-*}"]=1
+      if [ "$stated_agents" -ne "$agent_file_total" ]; then
+        add_issue 'ERROR' 'readme-count' 'README.md' \
+          "README冒頭記載のエージェント数 '$stated_agents' と実ファイル数 '$agent_file_total' が一致しません"
+      fi
+      if [ "$stated_groups" -ne "$actual_groups" ]; then
+        add_issue 'ERROR' 'readme-count' 'README.md' \
+          "README冒頭記載のグループ数 '$stated_groups' と実際のグループ数 '$actual_groups' が一致しません"
+      fi
     done
-    actual_groups=${#GROUP_SET[@]}
-
-    if [ "$stated_groups" -ne "$actual_groups" ]; then
-      add_issue 'ERROR' 'readme-count' 'README.md' \
-        "README冒頭記載のグループ数 '$stated_groups' と実際のグループ数 '$actual_groups' が一致しません"
-    fi
-  fi
+  done
 fi
 
 # ---------------------------------------------------------------------------
@@ -829,8 +834,8 @@ if [ -f "$COORDINATOR_PATH" ]; then
   # 振り分け表側の集合に 'mgmt-coordinator' を明示的に加えたうえで突合する。
   COORDINATOR_AGENT_TOKENS+=('mgmt-coordinator')
 
-  compare_coordinator_to_files COORDINATOR_AGENT_TOKENS AGENT_NAMES_FROM_FILES
-  COORD_TABLE_COUNT=$CMP_COORD_COUNT
+  compare_name_sets '' 'coordinator-sync' 'agents/mgmt-coordinator.md' '振り分け表' COORDINATOR_AGENT_TOKENS AGENT_NAMES_FROM_FILES
+  COORD_TABLE_COUNT=$CMP_LEFT_COUNT
   COORD_FILE_COUNT=$CMP_FILE_COUNT
 fi
 
@@ -862,6 +867,11 @@ elif [ ! -f "$GENERATE_SHOW_ORG_SH" ]; then
     "scripts/generate-show-org.sh が見つかりません: $GENERATE_SHOW_ORG_SH"
 else
   SHOW_ORG_TMP="$(mktemp)"
+  # sec-audit/qa-review検出(L7)への対応: 割込み（Ctrl-C等）でスクリプトが中断した場合、
+  # 下の正常経路の rm -f まで到達せず一時ファイルが残留しうる。EXIT/INT/TERM に
+  # trapを張り、どちらの経路でも確実に削除されるようにする（正常経路の rm -f は
+  # 冗長になるが、既に削除済みのパスへの rm -f はエラーにならないため両立させて問題ない）。
+  trap 'rm -f "$SHOW_ORG_TMP"' EXIT INT TERM
   GENERATE_STDERR=""
   if GENERATE_STDERR="$(bash "$GENERATE_SHOW_ORG_SH" "$REPO_ROOT" "$SHOW_ORG_TMP" 2>&1 1>/dev/null)"; then
     if diff -q "$SHOW_ORG_PATH" "$SHOW_ORG_TMP" >/dev/null 2>&1; then

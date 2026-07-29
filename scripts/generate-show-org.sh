@@ -175,6 +175,11 @@ for f in "${AGENT_FILES[@]}"; do
   fi
 
   summary="$(summarize_description "$desc_val")"
+  # summaryは後段でタブ区切り（name<TAB>summary）として連結・分割するため、summary自体に
+  # タブ・改行が含まれていると連結が崩れる。frontmatterの値は通常1行だがそれを前提にせず、
+  # 生成時にスペースへ正規化しておく。
+  summary="${summary//$'\t'/ }"
+  summary="${summary//$'\n'/ }"
   GROUP_MEMBERS_RAW["$group"]+="${name_val}"$'\t'"${summary}"$'\n'
 done
 

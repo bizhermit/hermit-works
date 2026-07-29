@@ -23,24 +23,21 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 GIT_CHANGELOG_SH="$REPO_ROOT/scripts/git-changelog.sh"
+ASSERTIONS_LIB="$SCRIPT_DIR/lib/assertions.sh"
 
 if [ ! -f "$GIT_CHANGELOG_SH" ]; then
   echo "Error: git-changelog.sh が見つかりません: $GIT_CHANGELOG_SH" >&2
   exit 1
 fi
+if [ ! -f "$ASSERTIONS_LIB" ]; then
+  echo "Error: assertions.sh が見つかりません: $ASSERTIONS_LIB" >&2
+  exit 1
+fi
 
-# ---------------------------------------------------------------------------
-# 一時ディレクトリ管理
-# ---------------------------------------------------------------------------
-
-TMP_DIRS=()
-cleanup() {
-  local d
-  for d in ${TMP_DIRS[@]+"${TMP_DIRS[@]}"}; do
-    [ -n "$d" ] && [ -d "$d" ] && rm -rf "$d"
-  done
-}
-trap cleanup EXIT INT TERM
+# アサーションヘルパー・一時ディレクトリ管理（TMP_DIRS/cleanup/trap）・テスト集計
+# （PASS_COUNT/FAIL_COUNT/run_test/finish_test_run）は
+# scripts/tests/run-tests.sh と共通のため lib へ切り出し済み（M16）。
+source "$ASSERTIONS_LIB"
 
 # 使い捨てのgitリポジトリを作り、グローバル変数 NEW_REPO_DIR にパスを格納する
 # （run-tests.sh の new_case_dir 同様、コマンド置換のサブシェル問題を避けるため
@@ -65,11 +62,8 @@ commit_in() {
 }
 
 # ---------------------------------------------------------------------------
-# git-changelog.sh 実行 & アサーション用ヘルパー
+# git-changelog.sh 実行ヘルパー
 # ---------------------------------------------------------------------------
-
-LAST_OUTPUT=""
-LAST_EXIT=0
 
 # 指定の使い捨てリポジトリ配下に git-changelog.sh をコピーしたうえで実行する。
 run_changelog_in_repo() {
@@ -78,59 +72,6 @@ run_changelog_in_repo() {
   cp "$GIT_CHANGELOG_SH" "$d/scripts/git-changelog.sh"
   LAST_OUTPUT="$(bash "$d/scripts/git-changelog.sh" "$@" 2>&1)"
   LAST_EXIT=$?
-}
-
-assert_exit() {
-  local expected="$1" label="$2"
-  if [ "$LAST_EXIT" != "$expected" ]; then
-    echo "  NG: $label (期待exit=$expected, 実際exit=$LAST_EXIT)"
-    return 1
-  fi
-  return 0
-}
-
-assert_contains() {
-  local needle="$1" label="$2"
-  case "$LAST_OUTPUT" in
-    *"$needle"*) return 0 ;;
-    *)
-      echo "  NG: $label (出力に '$needle' が含まれない)"
-      return 1
-      ;;
-  esac
-}
-
-assert_not_contains() {
-  local needle="$1" label="$2"
-  case "$LAST_OUTPUT" in
-    *"$needle"*)
-      echo "  NG: $label (出力に '$needle' が含まれてはいけない)"
-      return 1
-      ;;
-    *) return 0 ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-# テスト集計
-# ---------------------------------------------------------------------------
-
-PASS_COUNT=0
-FAIL_COUNT=0
-FAILED_NAMES=()
-
-run_test() {
-  local name="$1"
-  echo "== $name =="
-  if "$name"; then
-    echo "PASS: $name"
-    PASS_COUNT=$((PASS_COUNT + 1))
-  else
-    echo "FAIL: $name"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
-    FAILED_NAMES+=("$name")
-  fi
-  echo
 }
 
 # =============================================================================
@@ -218,6 +159,17 @@ test_path_filter_option() {
   return $ok
 }
 
+test_invalid_from_ref_errors() {
+  new_git_repo; local d="$NEW_REPO_DIR"
+  commit_in "$d" "feat: 何か"
+  run_changelog_in_repo "$d" nonexistent-tag HEAD
+  local ok=0
+  assert_exit 1 "存在しないref指定はexit 1" || ok=1
+  assert_contains 'git log の実行に失敗しました' "エラーメッセージが出る" || ok=1
+  assert_contains 'nonexistent-tag' "範囲指定の内容がエラーメッセージに含まれる" || ok=1
+  return $ok
+}
+
 test_non_git_directory_errors() {
   local d
   d="$(mktemp -d)"
@@ -239,17 +191,7 @@ run_test test_non_conventional_commit_goes_to_other
 run_test test_empty_range_reports_no_commits
 run_test test_from_to_range_option
 run_test test_path_filter_option
+run_test test_invalid_from_ref_errors
 run_test test_non_git_directory_errors
 
-echo '==================================================='
-echo "テスト結果: PASS ${PASS_COUNT} 件 / FAIL ${FAIL_COUNT} 件"
-if [ "$FAIL_COUNT" -gt 0 ]; then
-  echo "失敗したテスト: ${FAILED_NAMES[*]}"
-fi
-echo '==================================================='
-
-if [ "$FAIL_COUNT" -gt 0 ]; then
-  exit 1
-else
-  exit 0
-fi
+finish_test_run
