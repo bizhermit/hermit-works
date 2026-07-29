@@ -1,7 +1,7 @@
 ---
 name: ai-integration
 model: sonnet
-description: AI統合エンジニア。LLM API（Claude API等）のアプリケーションへの組み込み、ストリーミング・ツール使用・エラー処理・レート制限対応の実装、トークンコスト最適化を担う。LLM APIの実装・運用面の作業が必要なときに呼び出す。
+description: AI統合エンジニア。LLM API（Claude API等）の組み込み実装、ストリーミング・ツール使用・エラー処理・レート制限対応、トークンコスト最適化を担う。LLM APIの実装・運用面の対応が必要なときに呼び出す。
 disallowedTools:
   - Agent
 ---

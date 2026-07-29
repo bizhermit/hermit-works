@@ -60,6 +60,15 @@
 #          という、現在値としてのエージェント数表記を実体（agents/*.md の数）と突合する
 #          （ERROR）。時点明示付きの履歴記述（例:「当時（49体時点）」）は表記の形が
 #          異なるため対象外（誤検知しない）。
+#   11. スクリプト・CI定義のファイルモード検査（CONTRIBUTING 8.2 の機械化。
+#       トークン消費効率改善 第2弾T3）
+#       対象範囲は CONTRIBUTING 8.1 と同一（scripts/ 配下全体・.github/workflows/ 配下・
+#       .github/dependabot.yml）。この範囲内の git index 上のファイルモード
+#       （`git ls-files -s` で確認できる値）が、`.sh` は 100755、それ以外（.yml・
+#       fixtures配下のデータファイル等）は 100644 であることを検証する（ERROR）。
+#       第1弾コミット時に 100644 の .sh がすり抜けた実害（WSL2 の core.fileMode 環境）
+#       への対処。REPO_ROOT が git 作業ツリーでない場合は判定根拠がないため静かに
+#       スキップする（エラーにはしない）。
 #
 # 採用理由（旧 scripts/validate.ps1 からの移行にあたって）:
 #   devcontainer（Linux）ベースの開発環境への移行に伴い、実行環境の前提を
@@ -1357,6 +1366,58 @@ if [ -f "$DEVELOPMENT_MD_PATH" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 11) スクリプト・CI定義のファイルモード検査（CONTRIBUTING 8.2 の機械化）
+#
+# 対象範囲は CONTRIBUTING.md 8.1 の適用範囲と同一（scripts/ 配下全体・
+# .github/workflows/ 配下・.github/dependabot.yml）。この範囲内の git index 上の
+# ファイルモードが、`.sh` は 100755（実行可能）、それ以外（.yml・fixtures配下の
+# データファイル等）は 100644 であることを検証する。
+#
+# 実害（トークン消費効率改善 第1弾コミット時）: WSL2 の core.fileMode が有効な
+# 環境で、新規追加した .sh が 100644（非実行可能）のまま気付かれずコミットされた
+# ことがある。呼び出しは `bash <path>` を正としており実行権限の有無自体は動作に
+# 影響しないが、git index 上のモードが規約と食い違ったまま積み重なることを防ぐ。
+#
+# git 管理外（REPO_ROOT が git 作業ツリーでない。git 未導入の実行環境や、本チェックの
+# 対象外である一部テストフィクスチャを想定）の場合、判定根拠となる「git index上の
+# モード」自体が存在しないため、本チェックは静かにスキップする（セクション6・9(d)・
+# 10 と同様の設計判断。ERRORにはしない。validate.sh 全体が壊れないことを優先する）。
+#
+# `git ls-files -s -z` を用いる理由: 通常の（NUL区切りでない）出力を awk 等で
+# 空白分割すると、ファイル名に空白を含む場合にトークン境界を誤る（本リポジトリの
+# 実ファイルには該当しないが、他セクション同様に頑健な実装を優先する）。エントリは
+# "<mode> <sha> <stage>\t<path>" 形式のため、モードは最初の空白まで、パスは最初の
+# タブ以降を取ればよい（パスに空白を含んでいても両者とも正しく切り出せる）。
+# ---------------------------------------------------------------------------
+
+FILE_MODE_CHECKED_COUNT=0
+FILE_MODE_VIOLATION_COUNT=0
+
+if git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  while IFS= read -r -d '' fm_entry; do
+    [ -z "$fm_entry" ] && continue
+    fm_mode="${fm_entry%% *}"
+    fm_relf="${fm_entry#*$'\t'}"
+    [ -z "$fm_relf" ] && continue
+
+    FILE_MODE_CHECKED_COUNT=$((FILE_MODE_CHECKED_COUNT + 1))
+
+    fm_expected='100644'
+    case "$fm_relf" in
+      *.sh) fm_expected='100755' ;;
+    esac
+
+    if [ "$fm_mode" != "$fm_expected" ]; then
+      fm_chmod_flag='-x'
+      [ "$fm_expected" = '100755' ] && fm_chmod_flag='+x'
+      add_issue 'ERROR' 'file-mode-mismatch' "$fm_relf" \
+        "git index上のファイルモードが '${fm_mode}' ですが、規約（CONTRIBUTING 8.2）上は '${fm_expected}' である必要があります（修正例: git update-index --chmod=${fm_chmod_flag} -- ${fm_relf}）"
+      FILE_MODE_VIOLATION_COUNT=$((FILE_MODE_VIOLATION_COUNT + 1))
+    fi
+  done < <(git -C "$REPO_ROOT" ls-files -s -z -- scripts .github/workflows .github/dependabot.yml 2>/dev/null)
+fi
+
+# ---------------------------------------------------------------------------
 # 結果出力
 # ---------------------------------------------------------------------------
 
@@ -1390,6 +1451,7 @@ echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
 echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件"
 echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
+echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
 echo ''
 
 if [ "${#ISSUES[@]}" -eq 0 ]; then

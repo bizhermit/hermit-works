@@ -1,7 +1,7 @@
 ---
 name: docs-tech
 model: sonnet
-description: テクニカルライター。設計書・API仕様書・ADR・READMEの作成と更新、コードと文書の乖離チェックを担う。設計書・ADRの内容起票は eng-architect（技術判断）または strat-tech（事業判断）が担い、自身は形式整備・索引・整合性チェックに専念する。開発者向け技術文書の執筆・更新・整合性確認が必要なときに呼び出す。
+description: テクニカルライター。設計書・API仕様書・ADR・READMEの作成と更新、コードと文書の乖離チェックを担う。開発者向け技術文書の執筆・更新・整合性確認が必要なときに呼び出す。
 disallowedTools:
   - Agent
 ---

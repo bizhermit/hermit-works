@@ -1819,6 +1819,194 @@ EOF
   return $ok
 }
 
+# ---- ファイルモード検査（scripts/validate.sh セクション11、CONTRIBUTING 8.2機械化） ----
+#
+# トークン消費効率改善 第2弾T3。git indexのモード判定が前提のため、各テストケースは
+# fixtureコピーを `git init` してから対象ファイルを配置する（test_secret_scan_*系の
+# 既存パターンを踏襲）。
+
+test_file_mode_sh_not_executable_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  git -C "$dir" init -q
+  git -C "$dir" config user.email "test@example.com"
+  git -C "$dir" config user.name "Test"
+  git -C "$dir" add -A
+  git -C "$dir" commit -q -m "init"
+
+  # scripts/配下の .sh を非実行可能（100644）で追加する（第1弾コミット時の実害の再現）。
+  # 実行環境の core.fileMode 設定に検証結果が左右されないよう、chmod後にさらに
+  # `git update-index --chmod=-x` でindex上のモードを明示的に固定する。
+  mkdir -p "$dir/scripts"
+  cat > "$dir/scripts/example.sh" <<'EOF'
+#!/usr/bin/env bash
+echo hello
+EOF
+  chmod 644 "$dir/scripts/example.sh"
+  git -C "$dir" add scripts/example.sh
+  git -C "$dir" update-index --chmod=-x -- scripts/example.sh
+
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "scripts/配下の.shが100644のケースはexit 1" || ok=1
+  assert_contains 'file-mode-mismatch' "file-mode-mismatchカテゴリで検知" || ok=1
+  assert_contains 'scripts/example.sh' "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "'100644'" "実際のモード100644がメッセージに含まれる" || ok=1
+  assert_contains "'100755'" "期待モード100755がメッセージに含まれる" || ok=1
+  return $ok
+}
+
+test_file_mode_non_sh_executable_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  git -C "$dir" init -q
+  git -C "$dir" config user.email "test@example.com"
+  git -C "$dir" config user.name "Test"
+  git -C "$dir" add -A
+  git -C "$dir" commit -q -m "init"
+
+  # scripts/tests/fixtures/ 配下の非.shファイルが実行可能（100755）で追加されたケース
+  # （.sh以外は100644であるべき、の逆方向の違反）。
+  mkdir -p "$dir/scripts/tests/fixtures"
+  printf 'data\n' > "$dir/scripts/tests/fixtures/data.txt"
+  git -C "$dir" add scripts/tests/fixtures/data.txt
+  git -C "$dir" update-index --chmod=+x -- scripts/tests/fixtures/data.txt
+
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "非.shが100755のケースはexit 1" || ok=1
+  assert_contains 'file-mode-mismatch' "file-mode-mismatchカテゴリで検知" || ok=1
+  assert_contains 'scripts/tests/fixtures/data.txt' "対象ファイルが出力に含まれる" || ok=1
+  return $ok
+}
+
+test_file_mode_workflows_and_dependabot_scope_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  git -C "$dir" init -q
+  git -C "$dir" config user.email "test@example.com"
+  git -C "$dir" config user.name "Test"
+  git -C "$dir" add -A
+  git -C "$dir" commit -q -m "init"
+
+  # .github/workflows/ 配下・.github/dependabot.yml も対象範囲であることの確認
+  # （CONTRIBUTING 8.1の適用範囲＝scripts/一式に加えてこの2つ）。
+  mkdir -p "$dir/.github/workflows"
+  printf 'name: CI\n' > "$dir/.github/workflows/ci.yml"
+  printf 'version: 2\n' > "$dir/.github/dependabot.yml"
+  git -C "$dir" add .github/workflows/ci.yml .github/dependabot.yml
+  git -C "$dir" update-index --chmod=+x -- .github/workflows/ci.yml .github/dependabot.yml
+
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 ".github/workflows・dependabot.ymlが100755のケースはexit 1" || ok=1
+  assert_contains 'file-mode-mismatch' "file-mode-mismatchカテゴリで検知" || ok=1
+  assert_contains '.github/workflows/ci.yml' ".github/workflows/配下も対象範囲" || ok=1
+  assert_contains '.github/dependabot.yml' ".github/dependabot.ymlも対象範囲" || ok=1
+  return $ok
+}
+
+test_file_mode_out_of_scope_not_flagged() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  git -C "$dir" init -q
+  git -C "$dir" config user.email "test@example.com"
+  git -C "$dir" config user.name "Test"
+  git -C "$dir" add -A
+  git -C "$dir" commit -q -m "init"
+
+  # scripts/・.github/workflows/・.github/dependabot.yml のいずれにも属さない.sh
+  # （リポジトリルート直下）はCONTRIBUTING 8.1の適用範囲外のため、モードが100644でも
+  # 検知対象外であること（意図しない誤検知の防止）を確認する。
+  printf '#!/usr/bin/env bash\necho hi\n' > "$dir/tool.sh"
+  git -C "$dir" add tool.sh
+  git -C "$dir" update-index --chmod=-x -- tool.sh
+
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "対象範囲外(scripts/等でない).shは検査対象外のためexit 0" || ok=1
+  assert_not_contains 'file-mode-mismatch' "対象範囲外は検知されない" || ok=1
+  return $ok
+}
+
+test_file_mode_correct_modes_ok() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  git -C "$dir" init -q
+  git -C "$dir" config user.email "test@example.com"
+  git -C "$dir" config user.name "Test"
+
+  mkdir -p "$dir/scripts/tests/fixtures" "$dir/.github/workflows"
+  printf '#!/usr/bin/env bash\necho hi\n' > "$dir/scripts/tool.sh"
+  printf 'data\n' > "$dir/scripts/tests/fixtures/data.txt"
+  printf 'name: CI\n' > "$dir/.github/workflows/ci.yml"
+
+  git -C "$dir" add -A
+  git -C "$dir" update-index --chmod=+x -- scripts/tool.sh
+  git -C "$dir" update-index --chmod=-x -- scripts/tests/fixtures/data.txt .github/workflows/ci.yml
+  git -C "$dir" commit -q -m "init"
+
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "正しいモードのみのケースはexit 0" || ok=1
+  assert_not_contains 'file-mode-mismatch' "違反が検知されない" || ok=1
+  return $ok
+}
+
+test_file_mode_check_skipped_without_git_repo() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 案件ガードレール(3): git管理外（git initしていないディレクトリ）でも
+  # validate.sh全体が壊れず、本チェックは判定根拠がないため静かにスキップされること
+  # （ERRORにしない）を確認する。scripts/配下に規約違反相当のファイル
+  # （.shだが非実行可能）を置いても、gitリポジトリでないため検知されないのが期待値。
+  mkdir -p "$dir/scripts"
+  cat > "$dir/scripts/example.sh" <<'EOF'
+#!/usr/bin/env bash
+echo hello
+EOF
+  chmod 644 "$dir/scripts/example.sh"
+
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "git管理外ではファイルモード検査がスキップされexit 0" || ok=1
+  assert_not_contains 'file-mode-mismatch' "git管理外では検知されない" || ok=1
+  assert_contains 'ファイルモード検査: 走査対象=0件' "走査対象0件のままスキップされたことがサマリに表れる" || ok=1
+  return $ok
+}
+
+test_file_mode_check_skipped_without_git_binary() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 案件ガードレール(3): git binary自体が存在しない実行環境でも壊れないことの確認。
+  # PATH上で `git` という名のコマンドより先に「常に失敗するダミーgit」を解決させることで、
+  # 「git rev-parse --is-inside-work-tree」等の呼び出しが（gitがインストールされていない
+  # 場合と同様に）失敗する状況を再現する。
+  git -C "$dir" init -q
+  git -C "$dir" config user.email "test@example.com"
+  git -C "$dir" config user.name "Test"
+  git -C "$dir" add -A
+  git -C "$dir" commit -q -m "init"
+
+  mkdir -p "$dir/scripts"
+  cat > "$dir/scripts/example.sh" <<'EOF'
+#!/usr/bin/env bash
+echo hello
+EOF
+  chmod 644 "$dir/scripts/example.sh"
+  git -C "$dir" add scripts/example.sh
+  git -C "$dir" update-index --chmod=-x -- scripts/example.sh
+
+  local fakebin="$dir/.fakebin"
+  mkdir -p "$fakebin"
+  cat > "$fakebin/git" <<'EOF'
+#!/bin/sh
+exit 127
+EOF
+  chmod +x "$fakebin/git"
+
+  LAST_OUTPUT="$(PATH="$fakebin:$PATH" bash "$VALIDATE_SH" "$dir" 2>&1)"
+  LAST_EXIT=$?
+
+  local ok=0
+  assert_exit 0 "git不在環境でも他の検証は正常に完了しexit 0" || ok=1
+  assert_not_contains 'file-mode-mismatch' "git不在では判定根拠がないため検知されない" || ok=1
+  return $ok
+}
+
 # ---- 本体リポジトリの回帰確認 ---------------------------------------------------
 
 test_real_repo_still_passes() {
@@ -1900,6 +2088,13 @@ run_test test_doc_agent_count_design_historical_mention_not_flagged
 run_test test_doc_agent_count_development_mismatch_detected
 run_test test_doc_agent_count_development_match_ok
 run_test test_doc_agent_count_development_pattern_absent_in_existing_file
+run_test test_file_mode_sh_not_executable_detected
+run_test test_file_mode_non_sh_executable_detected
+run_test test_file_mode_workflows_and_dependabot_scope_detected
+run_test test_file_mode_out_of_scope_not_flagged
+run_test test_file_mode_correct_modes_ok
+run_test test_file_mode_check_skipped_without_git_repo
+run_test test_file_mode_check_skipped_without_git_binary
 run_test test_real_repo_still_passes
 
 finish_test_run

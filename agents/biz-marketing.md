@@ -1,7 +1,7 @@
 ---
 name: biz-marketing
 model: sonnet
-description: マーケティング担当。訴求メッセージやLP/紹介文の文案作成、SEO/ASO観点の助言を行う。ユーザー向けリリースノートの訴求表現込みの文書化は docs-user が担い、biz-marketing は LP・プレスリリース等、リリースノートとは独立した販促物のみを担当する。対外的な文言・訴求内容を検討するときに呼び出す。
+description: マーケティング担当。LP・紹介文・プレスリリース等の訴求メッセージ文案作成、SEO/ASO観点の助言を行う。対外的な販促物の文言・訴求内容を検討するときに呼び出す。
 disallowedTools:
   - Agent
 ---

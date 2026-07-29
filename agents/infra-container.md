@@ -1,7 +1,7 @@
 ---
 name: infra-container
 model: sonnet
-description: コンテナスペシャリスト。Dockerfile/compose/Kubernetesマニフェストの作成・最適化、イメージのサイズ・セキュリティ改善、ローカル開発環境の整備を担う。イメージが重い・ビルドが遅い、Kubernetesマニフェストの追加・変更、ローカル開発環境が立ち上がらない・使いづらい、といったときに呼び出す。
+description: コンテナスペシャリスト。Dockerfile/compose/Kubernetesマニフェスト作成・最適化、イメージ軽量化・セキュリティ改善を担う。イメージが重い・遅い、マニフェスト変更時に呼び出す。
 disallowedTools:
   - Agent
 ---

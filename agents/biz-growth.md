@@ -1,7 +1,7 @@
 ---
 name: biz-growth
 model: sonnet
-description: グロース担当。KPI改善施策の立案、ファネル分析、A/Bテスト設計、オンボーディング改善提案を行う。計測の設計・監査は ana-metrics が担う。継続率・転換率などの指標改善を検討するときに呼び出す。
+description: グロース担当。KPI改善施策の立案、ファネル分析、A/Bテスト設計、オンボーディング改善提案を行う。継続率・転換率などの指標改善を検討するときに呼び出す。
 disallowedTools:
   - Agent
 ---
