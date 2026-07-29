@@ -269,6 +269,7 @@ flowchart TD
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) — 開発環境（devcontainer）・プラグインの読み込みの仕組み・検証手順
 - [CONTRIBUTING.md](CONTRIBUTING.md) — エージェント/コマンド/スキルの追加・変更手順と規約
+- [DESIGN.md](DESIGN.md) — 設計思想・主要な設計判断の内容と背景（なぜそう設計したか）
 
 ## ライセンス
 

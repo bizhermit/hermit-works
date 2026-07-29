@@ -8,7 +8,7 @@
 ## ディレクトリ構成
 
 ```
-claude-system/
+hermit-works/
 ├── .claude/settings.json        # プロジェクトスコープ設定（マーケットプレイス登録＋プラグイン有効化）
 ├── .claude-plugin/
 │   ├── plugin.json              # プラグインマニフェスト
@@ -80,8 +80,9 @@ claude plugin details hw
 
 ## 検証（変更後は必須）
 
-[CONTRIBUTING.md](CONTRIBUTING.md) 5章のとおり、以下を両方実行してエラー・警告を解消してから
-完了とします。
+検証手順の正本は [CONTRIBUTING.md](CONTRIBUTING.md) 5章です。以下はその項目1・2を掲載の便宜のため
+再掲したものであり、両方実行してエラー・警告を解消してから完了とします（項目3の `/reload-plugins`
+は本ドキュメントの「開発ループ」節にすでに記載しているため、ここでは繰り返しません）。
 
 ```bash
 # 1. プラグイン定義のバリデーション（マニフェスト・frontmatter の検証）
@@ -90,6 +91,6 @@ claude plugin validate .
 # 2. 静的検証スクリプト（frontmatter必須項目・命名規則・重複・README整合性）
 bash scripts/validate.sh
 
-# scripts/validate.sh 自体を変更した場合は回帰テストも実行
+# scripts/validate.sh 自体を変更した場合は回帰テストも実行（合格基準: 全ケース PASS）
 bash scripts/tests/run-tests.sh
 ```
