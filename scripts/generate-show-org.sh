@@ -242,7 +242,7 @@ HEADER
 最後に利用方法を案内する:
 - 案件の依頼: `/hw:request <内容>`（統括が自動で分担）
 - 特定の専門家に直接依頼: `@hw:<エージェント名>` で言及するか、依頼内容に専門領域を明記
-- その他のコマンド: /hw:plan（計画のみ）/ /hw:standup（進捗報告）/ /hw:review（総合レビュー）/ /hw:release（リリース準備）/ /hw:report（定期レポート）/ /hw:routine（定期実行の設定）
+- その他のコマンド・スキルの一覧: `/hw:help`
 FOOTER
 } > "$OUTPUT_FILE"
 
