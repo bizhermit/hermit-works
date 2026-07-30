@@ -204,7 +204,7 @@
 ### 2.5 作業ディレクトリ命名
 
 **判断**: エージェントの成果物を保存する作業ディレクトリ名を `.hw/`（`repo-map.md`・
-`conventions.md`・`routines.md`・`plans/`・`reports/`・`docs/`）とした。
+`conventions.md`・`routines.md`・`decisions.md`・`plans/`・`reports/`・`docs/`）とした。
 
 **理由**: プラグイン名 `hermit-works` に由来する名称は、リポジトリ直下に置くドットディレクトリとしては
 長く、利用者リポジトリ内で毎回パスに現れることを踏まえ、プラグインの呼び出し名（`hw`）に合わせた

@@ -259,6 +259,7 @@ flowchart TD
 ├── repo-map.md       # プロジェクト構成マップ（全エージェントの共有前提知識）
 ├── conventions.md    # 利用者資材マップ（利用者側の規約・スキル・スクリプトの索引）
 ├── routines.md       # 定期実行の登録記録
+├── decisions.md      # 判断記録（1判断1行の軽量ADR。統括が利用者確認のうえ記録）
 ├── plans/            # 案件ごとの計画（/hw:request / /hw:plan が作成）
 ├── reports/          # スタンドアップ・定期レポート・リリース判定・障害記録
 └── docs/             # その他の組織成果物
