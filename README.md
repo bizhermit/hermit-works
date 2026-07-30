@@ -8,63 +8,53 @@
 
 ## インストール
 
-本リポジトリをクローンし、**リポジトリのルート**で Claude Code（ターミナルの `claude`・VSCode 拡張のどちらでも）を起動すれば、追加操作なしでプラグインが有効になります（設定済みの `.claude/settings.json` が読み込まれます）。
+マーケットプレイス経由でインストールします。用途に応じて3つのスコープから選べます。
+`claude plugin marketplace add` と `claude plugin install` の `--scope` は必ず揃えてください
+（省略時は既定の `user` になります）。
+
+- **端末で常時使う（`user` スコープ・既定）**: `~/.claude/settings.json` に記録され、全プロジェクト・全セッションで有効になります。
+
+  ```bash
+  claude plugin marketplace add bizhermit/hermit-works --scope user
+  claude plugin install hw@hermit-works --scope user
+  ```
+
+- **プロジェクトでチーム共有する（`project` スコープ）**: 対象プロジェクトの `.claude/settings.json` に記録されます。コミットすればチームで共有できます。
+
+  ```bash
+  claude plugin marketplace add bizhermit/hermit-works --scope project
+  claude plugin install hw@hermit-works --scope project
+  ```
+
+- **プロジェクトで自分だけ使う（`local` スコープ）**: 対象プロジェクトの `.claude/settings.local.json` に記録されます。Claude Code が `.claude/settings.local.json` を自動で `.gitignore` に追加するため、コミット対象にはなりません。
+
+  ```bash
+  claude plugin marketplace add bizhermit/hermit-works --scope local
+  claude plugin install hw@hermit-works --scope local
+  ```
+
+`project` / `local` スコープは対象プロジェクトの `.claude/` 配下に記録されるため、
+**リポジトリのルートでセッションを開始した場合のみ**有効になります（サブディレクトリで
+起動すると読み込まれません）。`user` スコープにこの制約は適用されません。
+
+インストール後は次のコマンドで状態を確認できます。
 
 ```bash
-# 状態確認
 claude plugin list
 claude plugin details hw
 ```
-
-- プロジェクト単位の設定（クローン方式・`--scope project`・`--scope local` はいずれも対象プロジェクトの
-  `.claude/` 配下に記録されます）は、**リポジトリのルートでセッションを開始した場合のみ**有効になります
-  （サブディレクトリで起動すると読み込まれません）。
-- 本リポジトリ以外のプロジェクトでも使いたい場合は、マーケットプレイス経由でインストールしてください。
-  用途に応じて3つのスコープから選べます。`claude plugin marketplace add` と `claude plugin install` の
-  `--scope` は必ず揃えてください（省略時は既定の `user` になります）。
-
-  - **端末で常時使う（`user` スコープ・既定）**: `~/.claude/settings.json` に記録され、全プロジェクト・全セッションで有効になります（上記のルート起動制約は適用されません）。
-
-    ```bash
-    claude plugin marketplace add bizhermit/hermit-works --scope user
-    claude plugin install hw@hermit-works --scope user
-    ```
-
-  - **プロジェクトでチーム共有する（`project` スコープ）**: 対象プロジェクトの `.claude/settings.json` に記録されます。コミットすればチームで共有できます。
-
-    ```bash
-    claude plugin marketplace add bizhermit/hermit-works --scope project
-    claude plugin install hw@hermit-works --scope project
-    ```
-
-  - **プロジェクトで自分だけ使う（`local` スコープ）**: 対象プロジェクトの `.claude/settings.local.json` に記録されます。Claude Code が `.claude/settings.local.json` を自動で `.gitignore` に追加するため、コミット対象にはなりません。
-
-    ```bash
-    claude plugin marketplace add bizhermit/hermit-works --scope local
-    claude plugin install hw@hermit-works --scope local
-    ```
 
 導入したら、まず対象リポジトリで `/hw:init` を実行してください。作業ディレクトリ（`.hw/`）と、全エージェントの共有前提知識になるマップ類（モノレポ構成マップ・利用者資材マップ）がまとめて作成されます。
 
 ## 更新
 
-インストール方法に応じて、次のいずれかで最新化してください。
+次のコマンドで最新化してください。
 
-- クローンしてルートで起動している場合
+```bash
+claude plugin update
+```
 
-  ```bash
-  git pull
-  ```
-
-  反映されるのは次回セッション起動時です。セッション中に反映させたい場合は `/reload-plugins` を実行します。
-
-- マーケットプレイス経由でインストールしている場合
-
-  ```bash
-  claude plugin update
-  ```
-
-  カタログ自体を更新する場合は `/plugin marketplace update hermit-works` を実行してください。セッション中に反映させたい場合は `/reload-plugins` を実行します。
+カタログ自体を更新する場合は `/plugin marketplace update hermit-works` を実行してください。セッション中に反映させたい場合は `/reload-plugins` を実行します。
 
 サードパーティマーケットプレイスの自動更新はデフォルトで無効です。有効にしたい場合は、マーケットプレイスを登録したスコープの設定ファイル（`--scope user` なら `~/.claude/settings.json`、`--scope project` なら `.claude/settings.json`、`--scope local` なら `.claude/settings.local.json`）の `extraKnownMarketplaces` で該当マーケットプレイスに `"autoUpdate": true` を設定してください。
 
