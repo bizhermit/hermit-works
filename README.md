@@ -224,6 +224,9 @@ flowchart TD
 | `hw:conventions` | 利用者資材マップ（`.hw/conventions.md`）の作成・更新 |
 | `hw:add-service` | 新規プロジェクト（マイクロサービス）の追加手順 |
 | `hw:incident` | 障害対応標準手順（トリアージ→復旧→ポストモーテム） |
+| `hw:tracker-setup` | 外部進捗管理ツール連携（`.hw/tracker.md`）の初期設定・見直し・停止 |
+| `hw:tracker-sync` | 外部進捗管理ツール連携の課題取得・スナップショット・投稿の実行（`/hw:request` から呼び出し） |
+| `hw:stakeholders` | 関係者マップ（`.hw/stakeholders.md`）の作成・更新 |
 
 ## 利用者側の規約・資材への準拠
 
@@ -259,15 +262,22 @@ flowchart TD
 ├── conventions.md    # 利用者資材マップ（利用者側の規約・スキル・スクリプトの索引）
 ├── routines.md       # 定期実行の登録記録
 ├── decisions.md      # 判断記録（1判断1行の軽量ADR。統括が利用者確認のうえ記録）
+├── tracker.md        # 外部進捗管理ツール連携の設定（存在時のみ連携が有効。hw:tracker-setup）
+├── stakeholders.md   # 関係者マップ（事実情報・宛先別執筆規約。hw:stakeholders）
 ├── procedures/       # 手順資産（案件から蒸留した再利用可能な手順。1手順1ファイル）
 ├── plans/            # 案件ごとの計画（/hw:request / /hw:plan が作成）
 ├── reports/          # スタンドアップ・定期レポート・リリース判定・障害記録
-└── docs/             # その他の組織成果物
+├── tracker/
+│   └── issues/       # 外部課題のスナップショット（tracker.md 有効時のみ。hw:tracker-sync）
+├── docs/             # その他の組織成果物
+└── local/            # 個人ローカルの主観メモ（.gitignore 対象。既定で未読込）
 ```
 
 `procedures/` は成長ループ（参照→実行→蒸留→昇格）の蓄積先です。定型的な案件は完了時に統括が手順資産へ蒸留し、
 次回以降の同種依頼では既存の手順資産を優先的に参照・再利用します。再利用実績を重ねた手順は、利用者の承認を得て
-`.claude/skills/` の正式スキルへ昇格します。
+`.claude/skills/` の正式スキルへ昇格します。`tracker.md`・`tracker/issues/` は外部進捗管理ツール連携（`hw:tracker-setup`）を導入したリポジトリにのみ生成されます。
+`stakeholders.md`・`local/` は `hw:tracker-setup` 経由でも、`hw:stakeholders` の単独利用でも生成されうるため、
+tracker 連携を導入していないリポジトリにも存在する場合があります。
 
 ## 開発・保守に参加するには
 
