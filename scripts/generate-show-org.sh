@@ -3,12 +3,13 @@
 # agents/*.md の frontmatter（name / description）から commands/show-org.md を生成する。
 #
 # 背景:
-#   組織図（グループとエージェント一覧）が README.md / commands/show-org.md /
+#   組織図（グループとエージェント一覧）は当初 README.md / commands/show-org.md /
 #   agents/mgmt-coordinator.md の3箇所に手書きで重複しており（三重ハードコード）、
 #   エージェントの追加・削除のたびに複数ファイルを手で同期する必要があり、ドリフトの
-#   温床になっていた。本スクリプトは commands/show-org.md のうち実際にエージェント
-#   構成に依存する「## 組織図」部分を agents/*.md から機械的に再生成することで、
-#   agents/*.md を単一の情報源（Single Source of Truth）にする。
+#   温床になっていた（B8対応で agents/mgmt-coordinator.md 側の重複は解消し、現在は
+#   README.md / commands/show-org.md の2箇所）。本スクリプトは commands/show-org.md
+#   のうち実際にエージェント構成に依存する「## 組織図」部分を agents/*.md から
+#   機械的に再生成することで、agents/*.md を単一の情報源（Single Source of Truth）にする。
 #   scripts/validate.sh は本スクリプトの生成結果と実ファイルの差分を検証する
 #   （「6) commands/show-org.md と scripts/generate-show-org.sh の生成結果との差分チェック」）。
 #

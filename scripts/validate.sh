@@ -19,10 +19,9 @@
 #      （README見出し文言の変更等により検証が静かに空振りするリスクへの対処）
 #      README.md が不在の場合も即終了はせず、他セクション（1〜3）の検知結果を握りつぶさない
 #      よう通常のERRORとして記録したうえで、README依存のセクション4のみをスキップする。
-#   6. agents/mgmt-coordinator.md の「組織構成（振り分け先）」表と、実ファイル構成の整合性チェック
-#      （組織図が README.md / commands/show-org.md / agents/mgmt-coordinator.md の3箇所に
-#      手書きで重複しドリフトしうる問題への対処。README同様、記載漏れ・余剰を検出し、
-#      見出し未検出・トークン抽出0件・mgmt-coordinator.md不在もERRORとする）
+#   （6は B8 対応でチェック自体を撤去。旧: agents/mgmt-coordinator.md の
+#      「組織構成（振り分け先）」表との整合性チェック。組織図の正は
+#      README.md / commands/show-org.md の2箇所に整理。欠番は振り直さない）
 #   7. commands/show-org.md と、scripts/generate-show-org.sh の生成結果との差分チェック
 #      （show-org.md は本来 agents/*.md の frontmatter から機械的に再生成すべき内容であり、
 #      手書きで乖離していないかを検出する。生成スクリプト自体の実行失敗もERRORとする）
@@ -447,70 +446,6 @@ extract_readme_table_tokens() {
   done
 }
 
-# 指定した行配列（変数名を第2引数で渡す nameref）内で、指定見出し（正規表現、行頭からの
-# 部分一致）直後にある Markdown テーブルの各データ行の「2列目」を読み取り、カンマ区切りで
-# 記載されたトークン（前後空白除去）を1行1トークンで標準出力する。
-#
-# extract_readme_table_tokens との違い:
-#   - README.md の組織図テーブルは「1行1トークン（バッククォート付き）」形式だが、
-#     agents/mgmt-coordinator.md の「組織構成（振り分け先）」表は
-#     「1行1グループ、2列目にカンマ区切りでエージェント名を列挙（バッククォートなし）」
-#     という別形式のため、専用の抽出関数として分離している。
-#   - README.md 固定ではなく任意の行配列を扱えるよう、対象をグローバル変数決め打ちにせず
-#     nameref で受け取る。
-#
-# 列見出し行（見出し直後の最初の行）と、区切り行（| --- | --- | 等、ダッシュ・パイプ・
-# 空白・コロンのみで構成される行）はデータ行として扱わずスキップする。
-# 見出しが見つからない場合は何も出力しない（呼び出し側で抽出0件をERROR判定すること。
-# extract_readme_table_tokens 側の注意事項と同様）。
-extract_pipe_table_second_column_tokens() {
-  local header_pattern="$1"
-  local -n _lines="$2"
-  local n=${#_lines[@]}
-  local header_idx=-1
-  local i
-
-  for ((i = 0; i < n; i++)); do
-    if [[ "${_lines[$i]}" =~ $header_pattern ]]; then
-      header_idx=$i
-      break
-    fi
-  done
-  if [ "$header_idx" -lt 0 ]; then
-    return 0
-  fi
-
-  i=$((header_idx + 1))
-  while [ "$i" -lt "$n" ] && [[ "${_lines[$i]}" =~ ^[[:space:]]*$ ]]; do
-    i=$((i + 1))
-  done
-
-  local row_idx=0
-  while [ "$i" -lt "$n" ] && [[ "${_lines[$i]}" =~ ^[[:space:]]*\| ]]; do
-    local line="${_lines[$i]}"
-    row_idx=$((row_idx + 1))
-    i=$((i + 1))
-
-    # 1行目（列見出し行。例: | グループ | エージェント |）はスキップ
-    if [ "$row_idx" -eq 1 ]; then continue; fi
-    # 区切り行（| --- | --- | のようにダッシュ・パイプ・空白・コロンのみ）はスキップ
-    if [[ "$line" =~ ^[[:space:]]*\|[[:space:]:|-]*\|?[[:space:]]*$ ]]; then continue; fi
-
-    local cell
-    cell="$(printf '%s' "$line" | awk -F'|' '{print $3}')"
-    # 同型グロブ対策の統一（extract_frontmatter_list_field と同じ理由）: 非クォートの
-    # `for tok in $cell` は単語分割後にパス名展開（グロブ）を受けうるため、`read -ra`
-    # （パス名展開を行わない）方式に置換する。
-    local -a toks=()
-    IFS=',' read -ra toks <<< "$cell"
-    local tok
-    for tok in "${toks[@]}"; do
-      tok="$(printf '%s' "$tok" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-      [ -n "$tok" ] && printf '%s\n' "$tok"
-    done
-  done
-}
-
 # 配列を ", " 区切りで連結する（メッセージ整形用）。
 join_comma() {
   local result="" first=1 x
@@ -547,8 +482,8 @@ join_comma() {
 #   $6 実ファイル一覧の配列（nameref）。
 #
 # nameref のローカル名 _cmp_left_arr / _cmp_files_arr は、呼び出し側の実引数名
-# （README_AGENT_TOKENS・COMMAND_NAMES_FROM_FILES・AGENT_NAMES_FROM_FILES・
-#   COORDINATOR_AGENT_TOKENS 等）のいずれとも衝突しない名前にしてある
+# （README_AGENT_TOKENS・COMMAND_NAMES_FROM_FILES・AGENT_NAMES_FROM_FILES 等。
+#   旧 COORDINATOR_AGENT_TOKENS 含む）のいずれとも衝突しない名前にしてある
 # （nameref循環参照回避。元の _readme_arr / _coord_arr / _files_arr 方式を踏襲）。
 #
 # 結果件数はグローバル変数 CMP_LEFT_COUNT / CMP_FILE_COUNT に格納する（本関数を
@@ -556,10 +491,8 @@ join_comma() {
 # 失われるため、戻り値はグローバル変数経由で受け渡す。元の2関数それぞれが個別に
 # 持っていた同種の設計判断を統合後も引き継ぐ）。
 #
-# mgmt-coordinator突合での呼び出し前提（元 compare_coordinator_to_files のコメントを
-# 引き継ぐ）: mgmt-coordinator 自身は振り分け表に自己記載されない（自分自身への
-# 振り分けはないため）前提で、呼び出し側が左側集合（振り分け表トークン）に
-# 'mgmt-coordinator' を明示的に加えたうえで本関数へ渡す（詳細は呼び出し箇所のコメント参照）。
+# （B8対応で mgmt-coordinator 突合の呼び出し箇所は撤去済み。現行の呼び出し元は
+# README突合の3箇所のみ）。
 compare_name_sets() {
   local label="$1"
   local category="$2"
@@ -854,48 +787,9 @@ else
   done
 fi
 
-# ---------------------------------------------------------------------------
-# 5) agents/mgmt-coordinator.md の「組織構成（振り分け先）」表との整合性チェック
-#
-# 組織図（グループとエージェント一覧）は README.md / commands/show-org.md /
-# agents/mgmt-coordinator.md の3箇所に手書きで重複している。README突合（セクション4）に
-# 加えて、ここでは mgmt-coordinator.md 側の振り分け表を実ファイル構成と突合する。
-# ---------------------------------------------------------------------------
-
-COORDINATOR_PATH="$AGENTS_DIR/mgmt-coordinator.md"
-
-COORD_TABLE_COUNT='-'
-COORD_FILE_COUNT='-'
-
-# 注意: agents/mgmt-coordinator.md が存在しない場合、本セクションはERRORにはせず
-# 静かにスキップする（本体リポジトリでは必ず存在するファイルだが、本チェックより前から
-# ある最小テストフィクスチャ（scripts/tests/fixtures/base/）等、意図的に一部のファイルしか
-# 持たない検証対象ディレクトリで、本チェック追加のためだけに無関係な既存テストを
-# 大量に更新せずに済むようにするための設計判断）。README.md 同様に必須ファイル扱いと
-# したい場合は、ここを他セクション同様の 'ERROR' 記録に変更すること。
-if [ -f "$COORDINATOR_PATH" ]; then
-  COORDINATOR_LINES=()
-  while IFS= read -r line || [ -n "$line" ]; do
-    COORDINATOR_LINES+=("${line%$'\r'}")
-  done < "$COORDINATOR_PATH"
-
-  mapfile -t COORDINATOR_AGENT_TOKENS < <(
-    extract_pipe_table_second_column_tokens '^##[[:space:]]*組織構成' COORDINATOR_LINES
-  )
-  if [ "${#COORDINATOR_AGENT_TOKENS[@]}" -eq 0 ]; then
-    add_issue 'ERROR' 'coordinator-extract' 'agents/mgmt-coordinator.md' \
-      '「組織構成（振り分け先）」見出しが見つからないか、直後のテーブルからエージェント名を1件も抽出できませんでした（見出し文言の変更等で検証が空振りしている可能性があります）'
-  fi
-
-  # mgmt-coordinator 自身は振り分け表に自己記載されない（自分自身への振り分けはないため）。
-  # 実ファイル側には当然 mgmt-coordinator.md 自身が含まれるため、比較対象を揃えるべく
-  # 振り分け表側の集合に 'mgmt-coordinator' を明示的に加えたうえで突合する。
-  COORDINATOR_AGENT_TOKENS+=('mgmt-coordinator')
-
-  compare_name_sets '' 'coordinator-sync' 'agents/mgmt-coordinator.md' '振り分け表' COORDINATOR_AGENT_TOKENS AGENT_NAMES_FROM_FILES
-  COORD_TABLE_COUNT=$CMP_LEFT_COUNT
-  COORD_FILE_COUNT=$CMP_FILE_COUNT
-fi
+# 5) は B8 対応で撤去（agents/mgmt-coordinator.md の「組織構成（振り分け先）」表との
+# 整合性チェック。組織図の正は README.md / commands/show-org.md の2箇所に整理。
+# 欠番は振り直さない）。
 
 # ---------------------------------------------------------------------------
 # 6) commands/show-org.md と scripts/generate-show-org.sh の生成結果との差分チェック
@@ -914,10 +808,12 @@ GENERATE_SHOW_ORG_SH="$SCRIPT_DIR/generate-show-org.sh"
 
 SHOW_ORG_DIFF_STATUS='-'
 
-# 注意: commands/show-org.md が存在しない場合も、上のmgmt-coordinator.md同様の理由で
-# ERRORにはせず静かにスキップする。一方 scripts/generate-show-org.sh は SCRIPT_DIR
-# （このバリデータ自身のディレクトリ）から解決するため、検証対象ディレクトリの構成に
-# 関わらず常に存在するはずのファイルであり、こちらが見つからない場合は通常どおりERRORとする。
+# 注意: commands/show-org.md が存在しない場合も、本チェックより前からある最小テスト
+# フィクスチャ（scripts/tests/fixtures/base/）等、意図的に一部のファイルしか持たない
+# 検証対象ディレクトリでの誤検知を避けるため、ERRORにはせず静かにスキップする。一方
+# scripts/generate-show-org.sh は SCRIPT_DIR（このバリデータ自身のディレクトリ）から
+# 解決するため、検証対象ディレクトリの構成に関わらず常に存在するはずのファイルであり、
+# こちらが見つからない場合は通常どおりERRORとする。
 if [ ! -f "$SHOW_ORG_PATH" ]; then
   :
 elif [ ! -f "$GENERATE_SHOW_ORG_SH" ]; then
@@ -1262,7 +1158,7 @@ done
 # 許容し実体との一致を検証する。
 #
 # 対象ファイルが存在しない検証対象ディレクトリ（テストフィクスチャ等）では、
-# セクション5・6（mgmt-coordinator.md・show-org.md）と同様にERRORにはせず
+# セクション6（show-org.md）と同様にERRORにはせず
 # 静かにスキップする（本チェック追加のためだけに無関係な既存フィクスチャ・
 # テストを大量に更新せずに済むようにするための設計判断）。
 # ---------------------------------------------------------------------------
@@ -1491,7 +1387,6 @@ echo 'hermit-works 静的検証結果'
 echo '==================================================='
 echo "対象件数: agents=$agent_total / commands=$command_total / skills=$skill_total"
 echo "README突合: エージェント README=$AGENT_README_COUNT/実体=$AGENT_FILE_COUNT  コマンド README=$CMD_README_COUNT/実体=$CMD_FILE_COUNT  スキル README=$SKILL_README_COUNT/実体=$SKILL_FILE_COUNT"
-echo "mgmt-coordinator突合: 振り分け表=$COORD_TABLE_COUNT/実体=$COORD_FILE_COUNT（agents/mgmt-coordinator.md 不在時は '-'）"
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
 echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件"

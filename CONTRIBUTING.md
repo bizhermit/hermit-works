@@ -540,8 +540,8 @@ description: <この手順が何をするものか>。<どんなときに使う�
    bash scripts/validate.sh
    ```
    `scripts/validate.sh`（infra-devops整備）は、`agents/*.md`・`commands/*.md`・`skills/*/SKILL.md`
-   の frontmatter必須項目・命名規則・重複、README および `agents/mgmt-coordinator.md`「組織構成
-   （振り分け先）」表との整合性、`commands/show-org.md` の生成差分、秘密情報混入チェック
+   の frontmatter必須項目・命名規則・重複、README 記載のエージェント一覧・コマンド一覧・スキル一覧と
+   実ファイル構成の整合性、`commands/show-org.md` の生成差分、秘密情報混入チェック
    （シークレットスキャン）、エージェント作業ガードレール（共通6短文・`disallowedTools`・
    TK-2/E-1委任制限文の逐語一致）、数量表記整合を検証する bash スクリプトです（devcontainer移行に
    伴い旧 `validate.ps1` から移行。追加ランタイム不要の方針は維持）。

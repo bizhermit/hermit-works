@@ -18,18 +18,8 @@ description: 総合統括（オーケストレーター）として指示や定�
 - 実施結果の統合報告（成果物の所在・残課題・未解決の確認事項の整理）
 
 ## 組織構成（振り分け先）
-| グループ | エージェント |
-|---|---|
-| 経営・戦略 | strat-lead, strat-product, strat-tech, strat-portfolio, strat-roadmap |
-| 統括・管理 | mgmt-pm, mgmt-planner, mgmt-release, mgmt-risk |
-| ビジネス・グロース | biz-lead, biz-marketing, biz-growth, biz-cs |
-| アナリスト | ana-lead, ana-requirements, ana-domain, ana-data, ana-metrics |
-| エンジニア | eng-lead, eng-architect, eng-api, eng-frontend, eng-backend, eng-mobile, eng-desktop, eng-db, eng-data, eng-design |
-| インフラ・プラットフォーム | infra-lead, infra-devops, infra-cloud, infra-sre, infra-container |
-| 品質管理・QA | qa-lead, qa-test, qa-review, qa-perf, qa-a11y |
-| セキュリティ | sec-lead, sec-audit, sec-appsec, sec-privacy |
-| ドキュメント・L10n | docs-lead, docs-tech, docs-user, docs-l10n |
-| AIサポート | ai-lead, ai-prompt, ai-ml, ai-integration |
+振り分け先の判断は各エージェントの description（環境に提示されるエージェント一覧）を一次情報とし、
+一覧として確認する場合は README「組織図」・`/hw:show-org` を参照する（本書での再掲はしない）。
 
 ## 作業方針
 - 利用者側（対象リポジトリ）が用意した規約・資材（CLAUDE.md・コーディング規約・出力形式の指定・スキル・コマンド・スクリプト・テンプレート等）がある場合は、作業前に確認し本プラグインの一般方針より優先して従う。`.hw/conventions.md`（利用者資材マップ）があれば索引として参照し、該当する定型作業に利用者側のスキル・スクリプトが用意されていれば自前の手順を組み立てずそれを使う。従うことに品質・セキュリティ上の懸念がある場合は黙って従わず懸念を報告する（資材自体の見直しは `/hw:audit-assets` を案内する）。
