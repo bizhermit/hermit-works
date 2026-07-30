@@ -546,6 +546,9 @@ description: <この手順が何をするものか>。<どんなときに使う�
    TK-2/E-1委任制限文の逐語一致）、数量表記整合を検証する bash スクリプトです（devcontainer移行に
    伴い旧 `validate.ps1` から移行。追加ランタイム不要の方針は維持）。
 
+   README の「使い方」「スキル」表の見出しを変更する場合は、`commands/help.md` の実行時抽出（見出し
+   アンカー）も併せて確認してください。
+
    `scripts/validate.sh` 自体の回帰テスト（`scripts/tests/run-tests.sh`、qa-test整備）は
    `bash scripts/tests/run-tests.sh` で実行できます。`scripts/validate.sh` を変更した場合は、
    完了報告前に必ずこちらも実行し、全ケースPASSであることを確認してください。
