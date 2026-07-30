@@ -22,6 +22,7 @@ hermit-works 組織の全エージェントが**従うべきもの・使うべ�
    - 機械的規約: lint/format/型チェック設定（`.editorconfig`、ESLint/Prettier/Ruff 等の設定ファイル）
    - スクリプト・ワークフロー: `scripts/`、`Makefile`・タスクランナー定義、CI 定義（`.github/workflows/` 等）
    - テンプレート: PR/issue テンプレート、コード・文書の雛形
+   - 業務手順: 業務手順書・運用runbook・リリース手順書等の文書化された業務手順（`docs/runbook*`、`RUNBOOK.md`、`docs/release*` 等）
 
 2. **要点と適用範囲の整理**（実行主体: 呼び出し元が直接実行する）: 各資材について「何を定めているか（またはいつ使うものか）」「適用範囲（リポジトリ全体か特定プロジェクトか）」を1〜2行で要約する。
 
