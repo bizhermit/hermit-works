@@ -7,7 +7,7 @@
 #   hermit-works 内で繰り返し発生する「git 履歴の変更一覧整形」を、都度アドホックに
 #   re実装しないための共通スクリプト（定型作業はスクリプト/skill化する方針。
 #   CONTRIBUTING.md 参照）。主な利用箇所:
-#     - skills/release-flow/SKILL.md の「前回リリース以降の変更一覧を作成する」手順
+#     - mgmt-release（リリースマネージャー）のリリース準備作業での変更一覧作成
 #     - /hw:standup（スタンドアップ）での「前回レポート以降の変化」の把握
 #       （commands/standup.md は本トラック(トラックC)の編集対象外のため未接続。
 #       接続は別途 docs-tech / mgmt-pm 側での対応を想定）
