@@ -178,6 +178,8 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 （既存行との入替・統合の検討を優先し、それでも追加が必要と判断した理由を `DESIGN.md` に記録すること）
 を必須とします。
 
+背景・理由は [DESIGN.md](DESIGN.md) 2.11 を参照してください。
+
 ## 2. 新規エージェント追加手順
 
 着手前に 1.1 の判断基準5項目をすべて満たしていることを確認してください（1項目でも NO なら追加しません）。
@@ -309,6 +311,15 @@ description: <グループ名>グループの<役割名>として<担当業務�
 `disallowedTools: Agent` を追加してください（TK-2/E-1 委任制限文と `disallowedTools: Agent` はセットで
 初めて強制力を持ちます。既存 `disallowedTools` がある場合は配列に `Agent` を追加してマージします。
 チェックリストは2.7参照）。
+
+**例外（`tools:` 許可リスト方式との併用時）**: 2.3「ツール制約」の原則どおり `tools:` 許可リスト方式を
+選び、その一覧に `Agent`/`Task` を含めない場合（例: `agents/qa-review.md` の
+`tools: [Read, Glob, Grep]`）は、`disallowedTools: Agent` の追加は不要です。許可リストに
+`Agent`/`Task` が無いこと自体で委任経路が塞がるため、`disallowedTools` を併記しても意味が重複します。
+TK-2/E-1 委任制限文（本節冒頭）は方式によらず全非リーダーで必須のままです。`scripts/validate.sh` は
+`tools:` が1件以上指定され、かつ `Agent`/`Task` を含まないエージェントを `disallowedTools: Agent` の
+検査対象から除外します（`tools:` 未指定、または `tools:` に `Agent`/`Task` を含む場合は、
+`disallowedTools: Agent` の記載を通常どおり要求します）。
 
 #### 出力セクションの文言
 `## 出力` の文言は、グループの性質に応じて既存の同グループファイルからそのままコピーしてください

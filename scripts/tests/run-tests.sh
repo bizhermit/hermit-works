@@ -974,6 +974,7 @@ test_secret_scan_excludes_only_known_harness_files_not_whole_dir() {
   # 明示的な除外対象（既知ハーネスファイル）: ダミー秘密情報を含んでいても検知されない。
   printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/run-tests.sh"
   printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/run-git-changelog-tests.sh"
+  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/run-aggregate-agent-token-usage-tests.sh"
   # 除外対象外（fixtures配下想定のファイル）: 検知されなければならない。
   mkdir -p "$dir/scripts/tests/fixtures"
   printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/fixtures/leak.txt"
@@ -985,6 +986,7 @@ test_secret_scan_excludes_only_known_harness_files_not_whole_dir() {
   assert_contains 'scripts/tests/fixtures/leak.txt' "除外対象外ファイルが検知される" || ok=1
   assert_not_contains 'scripts/tests/run-tests.sh:' "既知ハーネスファイル(run-tests.sh)は検知されない" || ok=1
   assert_not_contains 'scripts/tests/run-git-changelog-tests.sh:' "既知ハーネスファイル(run-git-changelog-tests.sh)は検知されない" || ok=1
+  assert_not_contains 'scripts/tests/run-aggregate-agent-token-usage-tests.sh:' "既知ハーネスファイル(run-aggregate-agent-token-usage-tests.sh)は検知されない" || ok=1
   return $ok
 }
 

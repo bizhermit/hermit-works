@@ -970,6 +970,10 @@ fi
 #         自分自身のテストコードを「本物の漏えい」として誤検知し続けてしまう）。
 #       - scripts/tests/run-git-changelog-tests.sh: 同様の理由で除外対象とする既知のテスト
 #         ハーネスファイル（他の回帰テストスイート）。
+#       - scripts/tests/run-aggregate-agent-token-usage-tests.sh: 現状このファイルに秘密情報
+#         パターン該当文字列は存在しないが、姉妹ハーネス2件（上記）との対称性確保と、将来
+#         このハーネスにも検出パターンの実例をフィクスチャ等として埋め込むテストケースが
+#         追加された場合に備えた予防的措置として除外対象とする。
 #       - scripts/validate.sh                      : 本チェック自身。本セクションのコメントは
 #         検出パターンやカテゴリ名を説明のため文章中で言及しており（例: 「api-token」という
 #         カテゴリ名や、キー代入形パターンの説明文自体）、これらの語がパターンに偶然
@@ -1073,6 +1077,7 @@ for secret_scan_rel in "${SECRET_SCAN_FILES[@]}"; do
   case "$secret_scan_rel" in
     scripts/tests/run-tests.sh) continue ;;
     scripts/tests/run-git-changelog-tests.sh) continue ;;
+    scripts/tests/run-aggregate-agent-token-usage-tests.sh) continue ;;
     scripts/validate.sh) continue ;;
   esac
   secret_scan_abs="$REPO_ROOT/$secret_scan_rel"

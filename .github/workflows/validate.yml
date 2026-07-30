@@ -19,6 +19,10 @@ name: validate
 #   4. bash scripts/tests/run-git-changelog-tests.sh : scripts/git-changelog.sh の回帰テスト
 #      （存在する場合のみ実行。将来的にスクリプト自体が削除された場合でもジョブを
 #      失敗させず、スキップした旨のみ記録する）。
+#   5. bash scripts/tests/run-aggregate-agent-token-usage-tests.sh :
+#      scripts/aggregate-agent-token-usage.sh の回帰テスト（存在する場合のみ実行。
+#      上記4と同様、スクリプト自体が削除された場合でもジョブを失敗させず、
+#      スキップした旨のみ記録する）。
 #
 # 秘密情報・外部サービスへの依存: なし。使用する外部ネットワークアクセスは
 # actions/checkout と Claude Code CLI インストーラ（claude.ai/install.sh）の取得のみで、
@@ -80,4 +84,12 @@ jobs:
             bash scripts/tests/run-git-changelog-tests.sh
           else
             echo "scripts/tests/run-git-changelog-tests.sh が見つからないためスキップします"
+          fi
+
+      - name: "回帰テスト（scripts/aggregate-agent-token-usage.sh 用: scripts/tests/run-aggregate-agent-token-usage-tests.sh）"
+        run: |
+          if [ -f scripts/tests/run-aggregate-agent-token-usage-tests.sh ]; then
+            bash scripts/tests/run-aggregate-agent-token-usage-tests.sh
+          else
+            echo "scripts/tests/run-aggregate-agent-token-usage-tests.sh が見つからないためスキップします"
           fi
