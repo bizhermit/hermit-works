@@ -61,6 +61,13 @@ zipinfo -t "$ZIP"   # 末尾行 "N files, M bytes uncompressed" を確認
 ALLOWED_ENTRIES=()
 while IFS= read -r entry; do
   case "$entry" in
+    # 制御文字入りエントリ名に対する実際の防御は、この cntrl パターン一致そのものではなく
+    # フェイルセーフの組み合わせで成立している点に注意する: zipinfo -1 は制御文字を "^A" 等へ
+    # 可視化エスケープして出力するため、この case 判定が発火せず素通りする場合がある。しかし
+    # その場合でも、可視化後の名前は zip 内部の実バイト列と一致しないため、後段の unzip が名前
+    # 完全一致要求により抽出そのものに失敗し（filename not matched・終了コード11相当）、
+    # fail-closed で止まる。展開ツール（zipinfo/unzip）を変更・置換する際は、この名前完全一致に
+    # 依存したフェイルセーフが失われないか必ず確認すること。
     *[[:cntrl:]]*|*'\'*) echo "拒否: 制御文字/バックスラッシュを含むエントリ $entry"; continue ;;
     manifest.md) ;;                                  # ルート直下の唯一の例外
     /*) echo "拒否: 絶対パスエントリ $entry"; continue ;;
@@ -77,6 +84,12 @@ done < <(zipinfo -1 "$ZIP")
 rm -rf "$STAGING_DIR" && mkdir -p "$STAGING_DIR"
 if [ "${#ALLOWED_ENTRIES[@]}" -gt 0 ]; then
   unzip -o "$ZIP" -d "$STAGING_DIR" -- "${ALLOWED_ENTRIES[@]}"
+  unzip_rc=$?
+  if [ "$unzip_rc" -ne 0 ]; then
+    # 展開コマンドの終了コードを確認する（観測性の確保）。非ゼロは「拒否（抽出失敗）」として扱い、
+    # 上記ループ内の個別エントリ拒否とは別枠で手順9の完了報告の拒否一覧に含める。
+    echo "拒否（抽出失敗）: unzip が終了コード $unzip_rc を返却しました"
+  fi
 fi
 
 # 3. 展開後の事後検査（必須。symlink 対策はここに一本化する）: staging 配下にシンボリック
