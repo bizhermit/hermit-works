@@ -2,7 +2,7 @@
   "name": "hw",
   "displayName": "Hermit Works",
   "version": "0.1.0",
-  "description": "システム開発（Web/デスクトップ/モバイル）向けの専門家エージェント組織プラグイン。モノレポ内の複数プロジェクト（マイクロサービス）を対象に、10グループの専門家エージェントが作業を分担する。",
+  "description": "システム開発（Web/デスクトップ/モバイル）向けの専門家エージェント組織プラグイン。単一・複数どちらの構成のリポジトリでも、10グループの専門家エージェントが作業を分担する。",
   "author": {
     "name": "bizhermit",
     "email": "support@bizhermit.com"
