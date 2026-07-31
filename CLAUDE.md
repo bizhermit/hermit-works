@@ -6,6 +6,7 @@
 [DESIGN.md](DESIGN.md) を参照してください。
 なお、プラグインルートの CLAUDE.md は利用側リポジトリには読み込まれません（本ファイルは保守作業専用です）。
 資材・スクリプトの索引として [.hw/conventions.md](.hw/conventions.md) があれば参照してください（索引であり正本ではありません。CONTRIBUTING.md 5章の「正本と再掲」の定め参照）。
+CONTRIBUTING.md・DESIGN.md は全文を読まず、冒頭目次で該当する章・節を特定して部分読み込みしてください（文書横断の整合確認等スコープ上必要な場合を除く。正本は CONTRIBUTING.md 1章）。
 
 ## hermit-works への振り分け（一次受け）
 
