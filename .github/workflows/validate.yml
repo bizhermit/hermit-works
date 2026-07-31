@@ -46,9 +46,16 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    # 現行ジョブの実所要は数分だが、curl | bash ステップ等がハングした場合の
+    # CI枠浪費を防ぐため上限を設ける（既定360分は長すぎるため15分に短縮）。
+    timeout-minutes: 15
     steps:
       - name: リポジトリのチェックアウト
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # 後続ステップはgit認証を使用しないため、チェックアウト後にトークンを
+        # 残さない多層防御（permissions: contents: read と合わせて設定）。
+        with:
+          persist-credentials: false
 
       # devcontainer（.devcontainer/Dockerfile）と同じ、ネイティブバイナリの
       # install.sh経由でのインストール方式を採用する。
