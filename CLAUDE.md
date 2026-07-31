@@ -18,6 +18,7 @@
 
 ## 変更後の検証（必須）
 
+資材の変更は作業ブランチ（`feature/<topic>` 等）で行い、main への直接コミットはしない（正本は CONTRIBUTING.md 9章）。
 資材を変更したら、完了前に以下を実行してエラー・警告を解消する（詳細は CONTRIBUTING.md 5章（正本）。保守環境まわりは DEVELOPMENT.md「検証（変更後は必須）」）。
 
 ```bash
