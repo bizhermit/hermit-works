@@ -15,6 +15,7 @@ hermit-works/
 │   └── marketplace.json         # 配布元マニフェスト（自己参照）
 ├── .devcontainer/               # 開発環境（VSCode Dev Container）
 ├── .github/workflows/           # CI（push/pull_request時に検証手順を自動実行。validate.yml）
+├── .github/dependabot.yml       # 依存更新の自動PR設定（GitHub Actions の SHA ピン留め更新）
 ├── agents/                      # 専門家エージェント定義（51体、グループ別プレフィックス）
 ├── commands/                    # スラッシュコマンド（/hw: 名前空間で呼び出し）
 ├── skills/                      # 作業手順書スキル（hw: 名前空間）
