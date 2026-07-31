@@ -14,3 +14,4 @@ hermit-works の使い方を案内します。
 5. 末尾に案内を添える:
    - 誰が対応するか（エージェント一覧）を知りたい場合は `/hw:show-org` を案内する
    - 具体的な案件を依頼したい場合は `/hw:request <内容>` を案内する
+   - `/hw:audit-assets`・`/hw:optimize-assets`・`/hw:draft-docs` の使い分けに迷う場合は README「使い方」節の注記を案内する
