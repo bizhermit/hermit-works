@@ -4,6 +4,18 @@
 準拠する（Semantic Versioning ベースで、プラグインの呼び出しインターフェース（名前・frontmatter・
 コマンド仕様）への影響で MAJOR/MINOR/PATCH を定義）。
 
+## [0.3.0] - 2026-08-01
+
+### Added
+- 利用者向け出力・成果物文書（統括・docs系エージェント: docs-l10n/docs-lead/docs-tech/docs-user/
+  mgmt-coordinator）に URL 区切り規約を導入。裸 URL は前後を空白・改行で区切り直後に文字を続けない、
+  可能な限り markdown リンクを用いるよう統一し、出力の URL がリンクとして正しく認識されない事態を防ぐ
+- permissions（権限設定）パターン提案時の注意をスキル `hw:permission-rules` として新設。導入先で
+  `deny "Bash(git push --force*)"` が前方一致により `--force-with-lease` を巻き込み正当な操作まで
+  停止した実事故を受け、公式仕様の裏取りに基づく注意事項を sec-audit/sec-appsec/infra-devops へ導入した
+  うえで、重複保守を避けるためスキル化・トリガー行方式に集約。`audit-assets`/`optimize-assets` にも
+  一致範囲確認・新旧差分明示を必須とする一文を追加
+
 ## [0.2.0] - 2026-07-31
 
 ### Added
