@@ -219,9 +219,16 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 
 `## 作業方針` 冒頭の共通ガードレール文（利用者資材優先の1段落＋短文6行）は、全 `agents/*.md`
 で**逐語一致**が必須です。新規エージェント追加時・既存エージェント編集時のいずれも、正典
-（`scripts/validate.sh` の `GUIDELINE_COMMON_LINES` 定数、または既存の任意の `agents/*.md`）
-からそのままコピーしてください。文言を独自に言い換えない・要約しない・省略しないでください。
-`scripts/validate.sh` がこの逐語一致を検証し、欠落・改変は ERROR になります。
+（`scripts/lib/guidelines.sh` の `GUIDELINE_COMMON_LINES` 定数、または既存の任意の
+`agents/*.md`）からそのままコピーしてください。文言を独自に言い換えない・要約しない・省略しない
+でください。`scripts/validate.sh` は `scripts/lib/guidelines.sh` を source してこの逐語一致を
+検証し、欠落・改変は ERROR になります（正典＝lib・検証＝validate.sh の役割分担）。
+
+共通行の文言そのものを変更する場合は、(1) `scripts/lib/guidelines.sh` の該当定数を編集し、(2)
+`bash scripts/sync-guidelines.sh` を実行して対象ファイル群へ機械的に伝播させ、(3)
+`bash scripts/validate.sh` を実行して整合を確認してください（伝播＝sync。`scripts/sync-guidelines.sh`
+の対象分配は `scripts/validate.sh` の検証分配と同一です）。背景は [DESIGN.md](DESIGN.md) 2.30 を
+参照してください。
 
 ### 1.6 完了報告への証跡の明記（推奨）
 
@@ -254,13 +261,15 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 `## 作業方針` 末尾に置く「規約・命名・表記等の慣習的な判断（技術的トレードオフの裁定を除く）に迷った
 場合の段階的判断手順」を圧縮した1行は、`agents/mgmt-coordinator.md` を除く `agents/*.md` 全件
 （リーダー・非リーダー問わず）で**逐語一致**が必須です（1.5 の共通ガードレール文ブロック＝短文6行の
-予算とは別物の1行であり、6行の枠には含めません）。正典は `scripts/validate.sh` の
+予算とは別物の1行であり、6行の枠には含めません）。正典は `scripts/lib/guidelines.sh` の
 `GUIDELINE_DECISION_PROCEDURE_LINE` 定数、または既存の任意の `agents/*.md`（`mgmt-coordinator.md`
 以外）です。文言を独自に言い換えない・要約しない・省略しないでください。`mgmt-coordinator` は自ら
 利用者に直接確認できる立場のため、この共通文をそのまま持たず独自の手順（`agents/mgmt-coordinator.md`
-「作業方針」参照）を記述します。`scripts/validate.sh` がこの逐語一致を検証し、欠落・改変は ERROR に
-なります。文言を変更する場合は `scripts/validate.sh` の当該検査（`GUIDELINE_DECISION_PROCEDURE_LINE`
-定数と冒頭の検証内容一覧コメント）も同時に更新してください。
+「作業方針」参照）を記述します。`scripts/validate.sh` は `scripts/lib/guidelines.sh` を source して
+この逐語一致を検証し、欠落・改変は ERROR になります。文言を変更する場合は
+`scripts/lib/guidelines.sh` の当該定数を編集し、`bash scripts/sync-guidelines.sh` で対象ファイルへ
+伝播したうえで、`scripts/validate.sh` 冒頭の検証内容一覧コメントも実態に合わせて更新してください
+（手順の詳細は1.5参照）。
 
 **別枠の共通行の新規追加は、この判断手順行をもって審査ゲートとします**（「6行予算の枠外」を口実にした
 共通行の際限ない追加を防ぐための運用であり、追加を一切認めない打ち止めではありません）。以後さらに
@@ -443,10 +452,11 @@ description: <グループ名>グループの<役割名>として<担当業務�
 上記の三役審議（`strat-lead`・`qa-lead` の2ファイル逐語同期）と同種の運用が、他のファイル組でも
 採られています。`agents/sec-audit.md`・`agents/sec-appsec.md`・`agents/infra-devops.md` の
 permissions トリガー行（DESIGN 2.27参照）が該当します。三役審議の2ファイル同期とは異なり、
-こちらは `scripts/validate.sh` セクション9(h)（`GUIDELINE_PERMISSION_TRIGGER_LINE` 定数）による
-逐語一致の静的検証を追加済みです（1.4 のトリガー行新設要件(ii)を適用し、当初の目視確認のみの
-運用から移行しました）。変更する場合はまず3ファイル側の文言を統一し、続けて validate.sh の
-当該定数も同時に更新してください。
+こちらは `scripts/validate.sh` セクション9(h)（正典: `scripts/lib/guidelines.sh` の
+`GUIDELINE_PERMISSION_TRIGGER_LINE` 定数）による逐語一致の静的検証を追加済みです（1.4 の
+トリガー行新設要件(ii)を適用し、当初の目視確認のみの運用から移行しました）。変更する場合は
+`scripts/lib/guidelines.sh` の当該定数を編集し、`bash scripts/sync-guidelines.sh` で3ファイルへ
+伝播したうえで、`bash scripts/validate.sh` で整合を確認してください（手順の詳細は1.5参照）。
 
 このトリガー行は「Claude Code の権限設定（`permissions`）を提案・変更・レビューする際は
 `hw:permission-rules` スキルを読み込む」旨を伝える1行のみで、詳細規則（Bash パターンマッチングの
@@ -455,7 +465,7 @@ permissions トリガー行（DESIGN 2.27参照）が該当します。三役審
 トリガー行1行でスキル参照を促す〕でも確実にガイダンスへ到達することを確認済みです。経緯は
 DESIGN 2.27参照）。詳細規則を変更する場合はスキル側のみを更新し、3ファイルへのコピーは不要です
 （3ファイルで同期が必要なのはトリガー行1行のみ。ただしトリガー行自体の文言を変更する場合は、
-上記の静的検証対象のため validate.sh 側も同時更新してください）。
+上記の手順（正典lib編集→sync-guidelines.sh実行→validate.shで確認）に従ってください）。
 
 #### 連携セクションの書式
 `## 連携` の箇条書きは、`- 〜は eng-lead に確認する。` のような**散文型**を標準とします。
@@ -691,7 +701,8 @@ description: <この手順が何をするものか>。<どんなときに使う�
 ただし本ドキュメントが明示的に他所を正本と指定している規約は、その指定先が正本です（例: モデル
 割り当ての現時点の該当エージェントは README「モデル割り当て」表（2.5参照）、品質ゲートのレベル定義は
 `agents/mgmt-coordinator.md`「品質ゲートの適用判定」節、共通ガードレール文の正典は
-`scripts/validate.sh` の `GUIDELINE_COMMON_LINES` 定数（1.5参照））。
+`scripts/lib/guidelines.sh` の `GUIDELINE_COMMON_LINES` 定数（1.5参照。検証は `scripts/validate.sh`、
+伝播は `scripts/sync-guidelines.sh` が担う。詳細は DESIGN 2.30 参照））。
 
 いずれの変更後も、以下の項目1・2は**必ず**実行し、対象スクリプトに回帰テストがある場合は該当するもの
 も実行して、エラー・警告があれば解消してから完了報告してください。
@@ -721,15 +732,17 @@ description: <この手順が何をするものか>。<どんなときに使う�
 
    同様に、`scripts/git-changelog.sh` を変更した場合は `bash scripts/tests/run-git-changelog-tests.sh`
    （qa-test整備）を、`scripts/aggregate-agent-token-usage.sh` を変更した場合は
-   `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`（qa-test整備）を実行し、全ケース
-   PASSであることを確認してください。回帰テストが共有する共通ライブラリ（`scripts/tests/lib/` 配下）
-   を変更した場合は、影響が lib/ を共有する全ハーネスに及ぶため、以下の全ハーネスを実行し、
-   全ケースPASSであることを確認してください（新たなハーネスを追加した場合は、本リストと8.4の
-   該当箇所を同時に更新してください）。
+   `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`（qa-test整備）を、
+   `scripts/sync-guidelines.sh` を変更した場合は `bash scripts/tests/run-sync-guidelines-tests.sh`
+   （infra-devops整備）を実行し、全ケースPASSであることを確認してください。回帰テストが共有する
+   共通ライブラリ（`scripts/tests/lib/` 配下）を変更した場合は、影響が lib/ を共有する全ハーネスに
+   及ぶため、以下の全ハーネスを実行し、全ケースPASSであることを確認してください（新たなハーネスを
+   追加した場合は、本リストと8.4の該当箇所を同時に更新してください）。
 
    - `bash scripts/tests/run-tests.sh`
    - `bash scripts/tests/run-git-changelog-tests.sh`
    - `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`
+   - `bash scripts/tests/run-sync-guidelines-tests.sh`
 
    回帰テストを新設すべきかの判断基準と配置は8.4を参照してください。
 
