@@ -332,16 +332,8 @@ extract_frontmatter_list_field() {
 # 末尾が -lead）かどうかを判定する。TK-7の対象外判定（リーダーは委任行為自体が業務のため
 # disallowedTools への Agent 追加を要求しない）に使う。scripts/tests/ の判定規則
 # （末尾 -lead / mgmt-coordinator 一致）と同一にする。
-is_leader_agent_name() {
-  local name="$1"
-  if [ "$name" = 'mgmt-coordinator' ]; then
-    return 0
-  fi
-  case "$name" in
-    *-lead) return 0 ;;
-  esac
-  return 1
-}
+# is_leader_agent_name は scripts/lib/guidelines.sh（正典）で定義され、source 済み
+# （2026-08-01案件T6で自前実装を撤去し集約。CONTRIBUTING.md 1.5・1.8参照）。
 
 # README.md の指定見出し（正規表現、行頭からの部分一致）直後にある Markdown テーブル
 # （| で始まる行の連続）から、バッククォートで囲まれたトークンを1行1トークンで標準出力する。

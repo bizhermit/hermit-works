@@ -154,18 +154,8 @@ eval "$OLD_VARS_DUMP"
 # 対象ファイル一覧の算出（scripts/validate.sh の検証分配と同一にする）
 # ---------------------------------------------------------------------------
 
-# validate.sh の is_leader_agent_name と同一の判定規則（ファイル名基準。mgmt-coordinator
-# または末尾 -lead はリーダー）。
-is_leader_agent_name_sync() {
-  local name="$1"
-  if [ "$name" = 'mgmt-coordinator' ]; then
-    return 0
-  fi
-  case "$name" in
-    *-lead) return 0 ;;
-  esac
-  return 1
-}
+# is_leader_agent_name は scripts/lib/guidelines.sh（正典）で定義され、source 済み
+# （2026-08-01案件T6で自前実装 is_leader_agent_name_sync を撤去し集約。CONTRIBUTING.md 1.5・1.8参照）。
 
 AGENTS_ALL=()
 AGENTS_EXCEPT_COORDINATOR=()
@@ -177,7 +167,7 @@ for f in "$REPO_ROOT"/agents/*.md; do
   if [ "$base_name" != 'mgmt-coordinator' ]; then
     AGENTS_EXCEPT_COORDINATOR+=("agents/$(basename "$f")")
   fi
-  if ! is_leader_agent_name_sync "$base_name"; then
+  if ! is_leader_agent_name "$base_name"; then
     AGENTS_NON_LEADER+=("agents/$(basename "$f")")
   fi
 done

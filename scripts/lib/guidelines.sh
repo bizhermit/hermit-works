@@ -190,3 +190,23 @@ PERMISSION_TRIGGER_LINE_FILES=(
   'agents/infra-devops.md'
 )
 
+# エージェントのリーダー判定（ファイル名 = frontmatter `name` 基準。mgmt-coordinator または
+# 末尾 `-lead` はリーダー）。scripts/validate.sh（TK-7・TK-2/E-1の対象判定、セクション9(b)(c)）と
+# scripts/sync-guidelines.sh（AGENTS_NON_LEADER 等、対象ファイルへの分配）が共有する判定ロジック
+# （2026-08-01案件T6で両スクリプトの重複実装を本関数へ集約。qa L-1 / sec L-2 対応）。
+# scripts/tests/ 側の回帰テストも本関数と同一の判定規則（mgmt-coordinator完全一致 or 末尾-lead）
+# を前提にしている。
+#
+# 呼び出し側と同様、判定はファイル名（basename）で行う想定（frontmatter `name` の詐称による
+# すり抜けを避けるため。呼び出し元がその方針でbase_nameを渡す）。
+is_leader_agent_name() {
+  local name="$1"
+  if [ "$name" = 'mgmt-coordinator' ]; then
+    return 0
+  fi
+  case "$name" in
+    *-lead) return 0 ;;
+  esac
+  return 1
+}
+
