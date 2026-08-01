@@ -1,8 +1,10 @@
 # Changelog
 
-このリポジトリの notable な変更を記録する。バージョニング方針は [DESIGN.md](DESIGN.md) 2.10 に
-準拠する（Semantic Versioning ベースで、プラグインの呼び出しインターフェース（名前・frontmatter・
-コマンド仕様）への影響で MAJOR/MINOR/PATCH を定義）。
+このリポジトリの notable な変更を記録する。バージョニング方針は [DESIGN.md](DESIGN.md) 2.10・2.31 に
+準拠する（Semantic Versioning ベースで、MAJOR は呼び出しインターフェースの破壊、MINOR/PATCH は
+利用者が変更を意識する必要があるかで定義。詳細は [CONTRIBUTING.md](CONTRIBUTING.md) 9.2 が正本）。
+リリースは利用者面資材（`agents/`・`commands/`・`skills/`・`.claude-plugin/plugin.json`・
+`README.md`）に変更が及ぶ場合のみ発火する。
 
 ## [0.4.0] - 2026-08-01
 
