@@ -9,5 +9,41 @@
   },
   "enabledPlugins": {
     "hw@hermit-works": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(cat .claude-plugin/plugin.json)"
+    ],
+    "deny": [
+      "Bash(gh pr merge *)",
+      "Bash(gh repo delete *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push * --force *)",
+      "Bash(git push * -f *)",
+      "Bash(git -C * push --force *)",
+      "Bash(git -C * push -f *)",
+      "Bash(git -C * push * --force *)",
+      "Bash(git -C * push * -f *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git -C * push *)",
+      "Bash(gh pr create *)",
+      "Bash(gh api *)",
+      "Bash(gh auth token *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(git tag *)",
+      "Bash(gh release *)",
+      "Bash(gh pr close *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(git branch -D *)",
+      "Edit(.claude-plugin/plugin.json)",
+      "Edit(CHANGELOG.md)",
+      "Write(.claude-plugin/plugin.json)",
+      "Write(CHANGELOG.md)"
+    ]
   }
 }
