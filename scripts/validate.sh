@@ -69,6 +69,13 @@
 #          インポート）案件 qa-review High-1・CONTRIBUTING 1.4 原則4対応）が逐語存在するかを
 #          検証する（欠落はERROR。(d)(f)と同様、前後文脈・行位置に依存しない存在検証で、
 #          対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする）。
+#      (h) permission-rules トリガー行固定3ファイル（agents/sec-audit.md・
+#          agents/sec-appsec.md・agents/infra-devops.md。PERMISSION_TRIGGER_LINE_FILES）に、
+#          `hw:permission-rules` スキル参照トリガー行（正典: 本スクリプトの
+#          GUIDELINE_PERMISSION_TRIGGER_LINE 定数。DESIGN 2.27 追補・CONTRIBUTING 1.4
+#          原則4「検知手段のない規範は追加しない」対応）が逐語存在するかを検証する
+#          （欠落はERROR。(d)(f)(g)と同様、前後文脈・行位置に依存しない存在検証で、
+#          対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする）。
 #   10. エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1。従来の数量チェック
 #       [5] が README.md のみを対象とし、.claude-plugin/*.json・DESIGN.md・
 #       DEVELOPMENT.md が死角になっていた是正）
@@ -281,6 +288,28 @@ GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_LINE='zip 内の manifest.md および同�
 # 追加余地を残すため）。
 IMPORT_ASSETS_UNTRUSTED_INPUT_FILES=(
   'skills/import-assets/SKILL.md'
+)
+
+# permission-rules トリガー行（DESIGN 2.27 追補で採用されたハイブリッド構成＝トリガー行1行＋
+# 詳細スキル方式。本件（共通ルール管理の成長対応 A-3）で機械検証対象に追加。CONTRIBUTING 1.4
+# 原則4「検知手段のない規範は追加しない」対応）。agents/sec-audit.md・agents/sec-appsec.md・
+# agents/infra-devops.md の3ファイルに逐語同一で存在する1行（`## 作業方針` 節内、Claude Code
+# の権限設定を提案・変更・レビューする際に `hw:permission-rules` スキルの読み込みを義務付ける）。
+#
+# 設計判断: 既存9(d)(f)(g)と同じ理由（保守性・フィクスチャ独立性）でスクリプト内定数として
+# 保持する。前後の記号（リストマーカー）を含めた1行そのものとし、ファイル内容にこの文字列が
+# 部分文字列として含まれるかのみを見る（行位置・前後文脈に依存しない存在検証。
+# GUIDELINE_DECISION_PROCEDURE_LINE と同方式）。エージェントファイル自体は本件のスコープ外
+# （現存文言を正典化するのみ）のため、この定数はエージェント側の文言を変更しない。
+GUIDELINE_PERMISSION_TRIGGER_LINE='- Claude Code の権限設定（`.claude/settings.json` 等の `permissions`）を提案・変更・レビューする際は、作業前に必ず `hw:permission-rules` スキルを読み込み、そのガイダンスに従う。'
+
+# セクション9(h)の検証対象3ファイル（REPO_ROOTからの相対パス固定。
+# COMMANDS_SKILLS_INJECTION_FILES・TRACKER_SKILLS_EXTERNAL_INPUT_FILES・
+# IMPORT_ASSETS_UNTRUSTED_INPUT_FILES と同じ理由でリスト方式を踏襲する）。
+PERMISSION_TRIGGER_LINE_FILES=(
+  'agents/sec-audit.md'
+  'agents/sec-appsec.md'
+  'agents/infra-devops.md'
 )
 
 # ---------------------------------------------------------------------------
@@ -1278,6 +1307,26 @@ for rel_path in "${IMPORT_ASSETS_UNTRUSTED_INPUT_FILES[@]}"; do
   fi
 done
 
+# --- (h) permission-rules トリガー行固定3ファイル（DESIGN 2.27 追補・共通ルール管理の
+#     成長対応 A-3。CONTRIBUTING 1.4 原則4対応） -------------------------------------
+# 対象は PERMISSION_TRIGGER_LINE_FILES の固定3件のみ。(d)(f)(g)と同じ理由（本チェック
+# 追加のためだけに無関係な既存フィクスチャ・テストを大量に更新せずに済ませる設計判断）で、
+# 対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする。
+GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT=0
+
+for rel_path in "${PERMISSION_TRIGGER_LINE_FILES[@]}"; do
+  f="$REPO_ROOT/$rel_path"
+  [ -f "$f" ] || continue
+
+  file_content="$(cat "$f")"
+  file_content="${file_content//$'\r'/}"
+  if [[ "$file_content" != *"$GUIDELINE_PERMISSION_TRIGGER_LINE"* ]]; then
+    add_issue 'ERROR' 'guideline-permission-trigger-line-missing' "$rel_path" \
+      'permission-rulesトリガー行（正典。DESIGN 2.27 追補対応）が見つかりません（欠落・改変の可能性があります。行位置・前後文脈は問わない存在検証）'
+    GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT=$((GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT + 1))
+  fi
+done
+
 # ---------------------------------------------------------------------------
 # 10) エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1）
 #
@@ -1522,7 +1571,7 @@ echo "対象件数: agents=$agent_total / commands=$command_total / skills=$skil
 echo "README突合: エージェント README=$AGENT_README_COUNT/実体=$AGENT_FILE_COUNT  コマンド README=$CMD_README_COUNT/実体=$CMD_FILE_COUNT  スキル README=$SKILL_README_COUNT/実体=$SKILL_FILE_COUNT"
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
-echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件"
+echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件"
 echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
 echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
 echo ''
