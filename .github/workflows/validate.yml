@@ -9,10 +9,11 @@ name: validate
 #
 # ジョブ構成（実施内容と目的）:
 #   1. claude plugin validate .        : プラグインマニフェスト（.claude-plugin/*.json）の静的検証。
-#      Claude Code CLI のネイティブバイナリを devcontainer と同じ install.sh 経由で
-#      その場インストールして実行する（npm パッケージ配布ではなくこの方式を選んだ理由は
-#      下記コメント参照）。認証不要でオフライン動作することを確認済み（HOME を空にした
-#      状態でも成功/失敗を正しく判定する）。
+#      Claude Code CLI のネイティブバイナリを、固定バージョン直接取得＋SHA256照合
+#      （リポジトリ管理の期待値と照合。B9対応、判断記録 .hw/decisions.md 2026-08-01）で
+#      その場インストールして実行する（npm パッケージ配布ではなくこの方式を選んだ理由・
+#      devcontainer との方式差異は下記コメント参照）。認証不要でオフライン動作することを
+#      確認済み（HOME を空にした状態でも成功/失敗を正しく判定する）。
 #   2. bash scripts/validate.sh        : frontmatter必須項目・命名規則・重複・README整合性・
 #      秘密情報混入チェック等の静的検証（詳細は scripts/validate.sh 冒頭コメント）。
 #   3. bash scripts/tests/run-tests.sh : 上記 validate.sh 自体の回帰テスト。
@@ -28,7 +29,8 @@ name: validate
 #      場合でもジョブを失敗させず、スキップした旨のみ記録する）。
 #
 # 秘密情報・外部サービスへの依存: なし。使用する外部ネットワークアクセスは
-# actions/checkout と Claude Code CLI インストーラ（claude.ai/install.sh）の取得のみで、
+# actions/checkout と、Claude Code CLI ネイティブバイナリ本体（downloads.claude.ai/
+# claude-code-releases/ の固定バージョンURL。取得後にSHA256照合を行う）の取得のみで、
 # いずれもシークレットを必要としない。
 
 on:
@@ -49,7 +51,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    # 現行ジョブの実所要は数分だが、curl | bash ステップ等がハングした場合の
+    # 現行ジョブの実所要は数分だが、バイナリ取得ステップ等がハングした場合の
     # CI枠浪費を防ぐため上限を設ける（既定360分は長すぎるため15分に短縮）。
     timeout-minutes: 15
     steps:
@@ -60,23 +62,65 @@ jobs:
         with:
           persist-credentials: false
 
-      # devcontainer（.devcontainer/Dockerfile）と同じ、ネイティブバイナリの
-      # install.sh経由でのインストール方式を採用する。
-      # - 理由1: npm経由（@anthropic-ai/claude-code）はNode.jsランタイムへの依存を
-      #   追加で持ち込むが、本リポジトリの検証スクリプト群（validate.sh等）は
-      #   「追加ランタイムを導入しない」方針（CONTRIBUTING.md/各スクリプトのコメント参照）
-      #   を一貫して採っており、CIのセットアップ方式もこれに揃えるほうが一貫性がある。
-      # - 理由2: 本リポジトリの devcontainer が既にこの方式を採用しており（動作実績あり）、
-      #   ローカル開発環境とCIのインストール方式を揃えることで差異による不具合を避けられる。
-      # - バージョンチャンネルは devcontainer と同じ "stable" を指定する（latestのような
-      #   floating tagではないが、それでも将来のstableリリースでCLIの挙動が変わりCIが
-      #   予期せず落ちるリスクはdevcontainer側と同様に許容する。再現性が必要になった場合は
-      #   CLAUDE_CODE_VERSION相当のバージョン固定に切り替えること）。
+      # ネイティブバイナリを固定バージョンで直接取得し、リポジトリ管理のSHA256期待値と
+      # 照合してから使用する（B9対応。旧方式は devcontainer と同じ install.sh 経由の
+      # "stable" floatingチャンネル指定だったが、サプライチェーン防御の強化のため切替。
+      # 判断記録 .hw/decisions.md 2026-08-01 B9、比較調査
+      # .hw/reports/2026-08-01-b9-install-pinning-options.md）。
+      # - npm経由（@anthropic-ai/claude-code）を採用しない理由は従来と同じ: Node.js
+      #   ランタイムへの依存を追加で持ち込むが、本リポジトリの検証スクリプト群
+      #   （validate.sh等）は「追加ランタイムを導入しない」方針（CONTRIBUTING.md/各
+      #   スクリプトのコメント参照）を一貫して採っており、CIのセットアップ方式もこれに
+      #   揃えるほうが一貫性がある。本切替後もネイティブバイナリのままであり、この理由は
+      #   維持される。
+      # - devcontainer（.devcontainer/Dockerfile）とはこの切替により方式が分岐する
+      #   （devcontainer は引き続き install.sh 経由の "stable" チャンネル指定のまま。
+      #   devcontainer側の追随可否は本件のスコープ外・別途判断）。分岐させる理由:
+      #   install.sh が内蔵するSHA256照合は、常にスクリプト実行時点の「latestバイナリ」
+      #   に対してのみ行われる。バージョンを指定するTARGET引数は、その照合済みlatest
+      #   バイナリ自身の `install <target>` サブコマンド（クローズドソース）に渡される
+      #   だけで、TARGET指定時に最終的にインストールされる固定バージョンのバイナリ自体が
+      #   同様の照合を経ているかはinstall.shの読解だけでは確認できない（詳細は上記調査
+      #   レポート）。CIでは「取得したバイナリそのもの」をリポジトリ管理のハッシュと直接
+      #   照合できる本方式のほうが、固定バージョンに対する検証として確実である。
+      # - バージョン更新の運用手順: (1)
+      #   https://downloads.claude.ai/claude-code-releases/<新バージョン>/manifest.json
+      #   を取得し platforms.linux-x64.checksum の値を確認する。(2) 下の
+      #   CLAUDE_CODE_VERSION と CLAUDE_CODE_SHA256_LINUX_X64 を新バージョン・新ハッシュに
+      #   同時に更新する（どちらか一方のみの更新は次回CI実行時に照合失敗で検知される）。
+      #   (3) 本ジョブの成功をもって更新を確認する。dependabot 等の標準エコシステムでは
+      #   自動追従できないため、更新は手動（または別途のカスタム自動化）で行う。
+      #   担当は infra-devops（CI保守案件として実施）。更新の契機（誰がいつ上げるか）は
+      #   自動検知を導入していないため手動判断で、(a) CI失敗（取得不能・照合不一致）時、
+      #   (b) セキュリティ勧告等で新バージョンへの追従が必要になった時、に随時実施する。
+      # - 取得元オブジェクト（downloads.claude.ai上の該当バージョン）が将来提供終了・
+      #   削除された場合は、curlの取得失敗としてCI失敗で検知される（過去バージョンの
+      #   保持ポリシーは未確認）。その場合は速やかに新バージョンへ更新すること。
       # - `claude plugin validate` はAPIキー等の認証を必要としない、ローカル完結の静的検証
       #   であることを確認済み（未認証のHOMEディレクトリでも正しく成功/失敗を判定した）。
       - name: Claude Code CLI のインストール（claude plugin validate 用）
+        env:
+          # 固定バージョン。更新時は下のSHA256とセットで更新すること（上記コメント参照）。
+          CLAUDE_CODE_VERSION: "2.1.220"
+          # 取得元: https://downloads.claude.ai/claude-code-releases/2.1.220/manifest.json
+          # の platforms.linux-x64.checksum（2026-08-01 取得）。ubuntu-latest ランナーは
+          # linux-x64 のため他プラットフォーム分のハッシュは保持しない。
+          CLAUDE_CODE_SHA256_LINUX_X64: "674f61f20ff306f3100cf9200e4c36c4b70278b5bef2884549819b942a89c863"
         run: |
-          curl -fsSL https://claude.ai/install.sh | bash -s -- stable
+          set -euo pipefail
+          work_dir="$(mktemp -d)"
+          trap 'rm -rf "$work_dir"' EXIT
+          bin_path="${work_dir}/claude"
+          curl -fsSL --retry 3 --retry-delay 2 -o "$bin_path" \
+            "https://downloads.claude.ai/claude-code-releases/${CLAUDE_CODE_VERSION}/linux-x64/claude"
+          actual_sha256="$(sha256sum "$bin_path" | cut -d' ' -f1)"
+          if [ "$actual_sha256" != "$CLAUDE_CODE_SHA256_LINUX_X64" ]; then
+            echo "::error::Claude Code CLI のチェックサムが一致しません（期待: ${CLAUDE_CODE_SHA256_LINUX_X64} / 実際: ${actual_sha256}）。取得元の改ざん、またはCLAUDE_CODE_VERSIONとCLAUDE_CODE_SHA256_LINUX_X64の更新不整合の可能性があります。" >&2
+            exit 1
+          fi
+          chmod +x "$bin_path"
+          mkdir -p "$HOME/.local/bin"
+          mv "$bin_path" "$HOME/.local/bin/claude"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: claude plugin validate .
