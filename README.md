@@ -235,6 +235,7 @@ flowchart TD
 | `hw:tracker-setup` | 外部進捗管理ツール連携（`.hw/tracker.md`）の初期設定・見直し・停止 |
 | `hw:tracker-sync` | 外部進捗管理ツール連携の課題取得・スナップショット・投稿の実行（`/hw:request` から呼び出し） |
 | `hw:stakeholders` | 関係者マップ（`.hw/stakeholders.md`）の作成・更新 |
+| `hw:permission-rules` | Claude Code の Bash パターンマッチング・permissions 運用ガイダンス。deny ルール提案時の詳細規則・確認手順・多層防御考慮を提供する。sec-audit・sec-appsec・infra-devops が permissions を提案・変更・レビューする際に読み込む |
 | `hw:export-assets` | 成長したAI資産（手順資産・スクリプト・昇格済みスキル）を他リポジトリへ横展開するためのエクスポート手順。資産一覧の分類提示と利用者選択・混在資産の切り離し・秘密情報チェックを経て、.hw/export/ に zip とマニフェストを生成する。資産を他リポジトリへ持ち出したいときに使う。 |
 | `hw:import-assets` | hw:export-assets で生成された資産zipを取り込むインポート手順。マニフェスト確認・衝突時の4択（上書き・スキップ・別名保存・マージ草案）を経て、手順資産として実績リセット・出自記録付きで .hw/procedures/ へ配置する。展開元の資産を取り込むとき・再取り込みするときに使う。 |
 
