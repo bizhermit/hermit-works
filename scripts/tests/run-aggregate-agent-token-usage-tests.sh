@@ -148,6 +148,38 @@ test_toplevel_session_aggregation() {
   return 0
 }
 
+# キャッシュヒット率 = cache_read ÷ (input + cache_creation + cache_read) の手計算値
+# （通常ケース。分母>0）:
+#   hw:qa-review: cache_read=408, 分母=1105+307+408=1820 → 408/1820*100=22.417...% → 22.4%
+#   hw:sec-audit: cache_read=70,  分母=50+60+70=180     → 70/180*100=38.888...%  → 38.9%
+#   (トップレベル): cache_read=44, 分母=11+33+44=88      → 44/88*100=50.0%         → 50.0%
+test_cache_hit_rate_normal_case() {
+  run_target "$FIXTURE_DIR"
+  assert_contains "22.4%" "hw:qa-reviewのキャッシュヒット率(22.4%)" || return 1
+  assert_contains "38.9%" "hw:sec-auditのキャッシュヒット率(38.9%)" || return 1
+  assert_contains "50.0%" "トップレベルのキャッシュヒット率(50.0%)" || return 1
+  return 0
+}
+
+# hw:no-jsonl(agent-005) は対応する.jsonlが無いため input/cache_creation/cache_read が
+# すべて0となり、分母(=input+cache_creation+cache_read)も0になる。この場合は0除算せず
+# "-" を出力する仕様の確認（分母0ケース）。
+test_cache_hit_rate_zero_denominator_shows_dash() {
+  local line last_field
+  run_target "$FIXTURE_DIR"
+  line="$(printf '%s\n' "$LAST_OUTPUT" | grep 'hw:no-jsonl')"
+  if [ -z "$line" ]; then
+    echo "  NG: hw:no-jsonl の行が出力に見当たらない"
+    return 1
+  fi
+  last_field="$(printf '%s\n' "$line" | awk '{print $NF}')"
+  if [ "$last_field" != "-" ]; then
+    echo "  NG: hw:no-jsonl の行の最終列（キャッシュヒット率）が '-' ではない（実際: '$last_field'）"
+    return 1
+  fi
+  return 0
+}
+
 # --output-の-秘密情報漏出ガード: フィクスチャにもし本文相当の識別子(toolUseId等)を
 # 埋めていても、それらは出力に含まれないはず（集計値・エージェント種別・パスのみ出力する設計）。
 test_output_does_not_leak_transcript_internal_ids() {
@@ -169,6 +201,8 @@ run_test test_meta_without_jsonl_does_not_crash
 run_test test_iterations_duplicate_fields_are_not_double_counted
 run_test test_missing_field_triggers_warning
 run_test test_toplevel_session_aggregation
+run_test test_cache_hit_rate_normal_case
+run_test test_cache_hit_rate_zero_denominator_shows_dash
 run_test test_output_does_not_leak_transcript_internal_ids
 
 finish_test_run

@@ -1,6 +1,7 @@
 ---
 name: mgmt-pm
 model: sonnet
+effort: low
 description: プロジェクトマネージャー。進捗管理、課題（issue）管理、ブロッカーの検知とエスカレーション、関係者調整を担う。定例の進捗確認・ステータス報告、複数タスク停滞時の交通整理、課題一覧の優先度整理で呼び出す。
 disallowedTools:
   - Agent
