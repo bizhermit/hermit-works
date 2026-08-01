@@ -89,6 +89,21 @@ END {
 }
 AWK_EOF
 
+# キャッシュヒット率 = cache_read ÷ (input + cache_creation + cache_read) を
+# パーセント表示（小数1桁）で返す。分母が0の場合は "-" を返す（0除算回避・無意味な
+# 100%/0%表示を避けるため）。浮動小数演算はbash組み込みでは行えないためawkに委譲する
+# （本スクリプトの他の集計処理は整数のみでbash算術式のまま完結しているが、この算出だけ
+# 例外的にawkを使う）。
+calc_cache_hit_rate() {
+  local cr="$1" in_t="$2" cc="$3"
+  local denom=$((in_t + cc + cr))
+  if [ "$denom" -eq 0 ]; then
+    echo "-"
+    return
+  fi
+  awk -v cr="$cr" -v denom="$denom" 'BEGIN { printf "%.1f%%", (cr / denom) * 100 }'
+}
+
 # --- サブエージェント（委任）別の集計 ---------------------------------------
 declare -A DELEGATIONS=()
 declare -A T_LINES=()
@@ -155,29 +170,31 @@ echo
 if [ "$SUBAGENT_META_COUNT" -eq 0 ]; then
   echo "サブエージェントへの委任は検出されませんでした。"
 else
-  printf '%-20s %8s %10s %12s %12s %16s %14s\n' \
-    "エージェント種別" "委任回数" "発話数" "input" "output" "cache_creation" "cache_read"
+  printf '%-20s %8s %10s %12s %12s %16s %14s %14s\n' \
+    "エージェント種別" "委任回数" "発話数" "input" "output" "cache_creation" "cache_read" "cache_hit_rate"
 
   report_lines=()
   for agent_type in "${!DELEGATIONS[@]}"; do
     total=$(( ${T_INPUT[$agent_type]:-0} + ${T_OUTPUT[$agent_type]:-0} + ${T_CACHE_CREATE[$agent_type]:-0} + ${T_CACHE_READ[$agent_type]:-0} ))
-    report_lines+=("$(printf '%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d' \
+    hit_rate="$(calc_cache_hit_rate "${T_CACHE_READ[$agent_type]:-0}" "${T_INPUT[$agent_type]:-0}" "${T_CACHE_CREATE[$agent_type]:-0}")"
+    report_lines+=("$(printf '%s\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%d' \
       "$agent_type" "${DELEGATIONS[$agent_type]}" "${T_LINES[$agent_type]:-0}" \
       "${T_INPUT[$agent_type]:-0}" "${T_OUTPUT[$agent_type]:-0}" \
-      "${T_CACHE_CREATE[$agent_type]:-0}" "${T_CACHE_READ[$agent_type]:-0}" "$total")")
+      "${T_CACHE_CREATE[$agent_type]:-0}" "${T_CACHE_READ[$agent_type]:-0}" "$hit_rate" "$total")")
   done
 
-  # 合計トークン数（列8）降順で表示する。
-  while IFS=$'\t' read -r a_type a_deleg a_lines a_in a_out a_cc a_cr _a_total; do
-    printf '%-20s %8s %10s %12s %12s %16s %14s\n' \
-      "$a_type" "$a_deleg" "$a_lines" "$a_in" "$a_out" "$a_cc" "$a_cr"
-  done < <(printf '%s\n' "${report_lines[@]}" | sort -t $'\t' -k8,8nr)
+  # 合計トークン数（列9）降順で表示する。
+  while IFS=$'\t' read -r a_type a_deleg a_lines a_in a_out a_cc a_cr a_hit_rate _a_total; do
+    printf '%-20s %8s %10s %12s %12s %16s %14s %14s\n' \
+      "$a_type" "$a_deleg" "$a_lines" "$a_in" "$a_out" "$a_cc" "$a_cr" "$a_hit_rate"
+  done < <(printf '%s\n' "${report_lines[@]}" | sort -t $'\t' -k9,9nr)
 fi
 
 echo
 echo "--- 参考: トップレベル（オーケストレーター）セッション合算値（委任回数には含めない） ---"
-printf '%-20s %8s %10s %12s %12s %16s %14s\n' \
-  "(トップレベル)" "-" "$TL_LINES" "$TL_INPUT" "$TL_OUTPUT" "$TL_CACHE_CREATE" "$TL_CACHE_READ"
+TL_HIT_RATE="$(calc_cache_hit_rate "$TL_CACHE_READ" "$TL_INPUT" "$TL_CACHE_CREATE")"
+printf '%-20s %8s %10s %12s %12s %16s %14s %14s\n' \
+  "(トップレベル)" "-" "$TL_LINES" "$TL_INPUT" "$TL_OUTPUT" "$TL_CACHE_CREATE" "$TL_CACHE_READ" "$TL_HIT_RATE"
 
 echo
 GRAND_INPUT=$TL_INPUT

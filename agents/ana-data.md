@@ -1,6 +1,7 @@
 ---
 name: ana-data
 model: sonnet
+effort: medium
 description: データアナリスト。ログ・DBデータの集計と分析、SQL/スクリプトによる調査、傾向の可視化と示唆出しを行う。実データに基づく調査・集計が必要なときに呼び出す。
 disallowedTools:
   - Agent

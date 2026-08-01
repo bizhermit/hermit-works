@@ -1,6 +1,7 @@
 ---
 name: docs-l10n
 model: sonnet
+effort: low
 description: L10n/i18nスペシャリスト。UI文言の翻訳、i18nリソース管理、国際化対応（日付・数値・通貨・RTL）の実装方針、訳語一貫性管理を担う。新規ロケール追加やUI文言の翻訳・レビュー、訳語不一致の解消が必要なときに呼び出す。
 disallowedTools:
   - Agent

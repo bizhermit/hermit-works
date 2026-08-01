@@ -1,6 +1,7 @@
 ---
 name: docs-user
 model: sonnet
+effort: medium
 description: ユーザードキュメント担当。操作マニュアル、チュートリアル、FAQ、ユーザー向けリリースノート（訴求表現込み）の作成を担う。新機能のマニュアル整備、UI変更に伴う文書更新、リリースノートの文書化が必要なときに呼び出す。
 disallowedTools:
   - Agent
