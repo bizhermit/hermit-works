@@ -4,6 +4,37 @@
 準拠する（Semantic Versioning ベースで、プラグインの呼び出しインターフェース（名前・frontmatter・
 コマンド仕様）への影響で MAJOR/MINOR/PATCH を定義）。
 
+## [0.4.0] - 2026-08-01
+
+### Added
+- 共通ガードレール層（常時層6短文・判断手順1行／トリガー行＋詳細スキル層／機械層）の配置基準
+  （判定順: 機械層 → トリガー行＋スキル層を標準の既定先 → 常時層は審査ゲート経由）とトリガー行
+  新設の3要件（実機検証・`scripts/validate.sh` への逐語検証追加・対象エージェント限定）を
+  CONTRIBUTING 1.4 に新設
+- 共通ガードレール層の棚卸し運用（CONTRIBUTING 1.9）を新設。審査ゲート発生時・定期振り返り相乗り
+  の2条件で発動し、実効性点検・降格候補判定・記録様式（行頭一致の定型1行）を規定
+- 共通ガードレール文言の正典を集約した `scripts/lib/guidelines.sh` を新設（正典＝lib／検証＝
+  `scripts/validate.sh`／伝播＝新設の `scripts/sync-guidelines.sh` の3分掌）。正典変更時の反映を
+  「lib編集→sync実行→validate確認」に短縮し、51ファイル手編集の運用を廃止
+- `scripts/validate.sh` セクション9(h) を新設し、`agents/sec-audit.md`・`agents/sec-appsec.md`・
+  `agents/infra-devops.md` の permissions トリガー行（3ファイル間）の逐語一致を機械検証
+- `scripts/sync-guidelines.sh` の回帰テストハーネス `scripts/tests/run-sync-guidelines-tests.sh` を
+  新設し、CI（`.github/workflows/validate.yml`）・`CLAUDE.md`・`DEVELOPMENT.md` の検証手順一覧に反映
+- 「秩序より改善を優先する原則（成長原則）」（DESIGN 1.4・2.28）を明文化。採用すべき改善が既存方針・
+  過去裁定と衝突する場合、抵触のみを理由に棄却せず、実害範囲・検知手段・他層代替可否のメリット審査
+  で可否を判断する運用を導入し、統括（`mgmt-coordinator`）の作業方針に衝突時の対応（メリット審査・
+  縮小案と規約側改訂案の併記・利用者裁定を仰ぐ）を追加
+
+### Changed
+- CONTRIBUTING 1.8「別枠の共通行追加は原則打ち止め」を「審査ゲート」として再定義し、既存方針への
+  抵触を単独の棄却理由にしない運用へ変更（1.4 原則6と同等の審査を必須化）
+- CONTRIBUTING 2.4: permissions トリガー行の同期範囲の記述を、`scripts/validate.sh` 逐語検証追加
+  （目視確認のみ→機械検証併用）に合わせて更新
+- `scripts/validate.sh`: 逐語検証用の正典定数群の定義を撤去し、`scripts/lib/guidelines.sh` を
+  source する構成へリファクタリング（値の実体を lib に一元化。検証結果は移設前後で不変）
+- `scripts/sync-guidelines.sh`・`scripts/validate.sh` が個別実装していたリーダー判定関数を
+  `scripts/lib/guidelines.sh` の共通関数 `is_leader_agent_name` へ集約し、重複実装を解消
+
 ## [0.3.0] - 2026-08-01
 
 ### Added
