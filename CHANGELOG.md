@@ -6,6 +6,24 @@
 リリースは利用者面資材（`agents/`・`commands/`・`skills/`・`.claude-plugin/plugin.json`・
 `README.md`）に変更が及ぶ場合のみ発火する。
 
+## [0.6.0] - 2026-08-03
+
+### Added
+- リリース PR のマージを契機にタグ `v<version>` を自動付与する CI ワークフロー
+  （`.github/workflows/tag-release.yml`）を新設（マージコミット方式であることの検証込み。
+  squash/rebase マージ検知時はタグを付与せず失敗させる）
+- リリースノートのドラフト作成・GitHub Release へのドラフト登録を行う保守用ローカル
+  `/release-notes` コマンド（`.claude/commands/release-notes.md`）を新設（`/release` 手順10からの
+  続き、または単独実行に対応）
+
+### Changed
+- 「記録先の使い分け」条項を拡充: 利用者から指摘・訂正・裁定を受けて記録する際は、個人メモリへ
+  書き込む前に共有要否を判断し、共有すべき内容のうち規約・手順の誤り・不足に起因するものは
+  当該資材の修正を第一候補とする（`/hw:init` 手順5の提案条項文・`/hw:audit-assets` の ai-prompt
+  点検観点を拡充。DESIGN 2.22。保守用 CLAUDE.md にも自己適用版を追加）
+- 保守運用の都合（保守用の定期実行との連携等）を理由に配布対象の資材を変更しない原則を規約化
+  （CONTRIBUTING 1.10 正本・DESIGN・保守用 CLAUDE.md）
+
 ## [0.5.0] - 2026-08-02
 
 ### Added
