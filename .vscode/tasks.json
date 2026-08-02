@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Git: 作業ブランチ整理 (git-cleanup-branch)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "scripts/git-cleanup-branch.sh",
+        "${input:cleanupTargetBranch}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "cleanupTargetBranch",
+      "type": "promptString",
+      "description": "切り替え先ブランチ（何も入力せず Enter で develop）",
+      "default": "develop"
+    }
+  ]
+}

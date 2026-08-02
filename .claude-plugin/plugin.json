@@ -1,7 +1,7 @@
 {
   "name": "hw",
   "displayName": "Hermit Works",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "システム開発（Web/デスクトップ/モバイル）向けの専門家エージェント組織プラグイン。単一・複数どちらの構成のリポジトリでも、10グループの専門家エージェントが作業を分担する。",
   "author": {
     "name": "bizhermit",

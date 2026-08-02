@@ -8,7 +8,7 @@ $RECYCLE.BIN/
 .LSOverride
 
 # エディタ設定
-.vscode/
+.vscode/*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json

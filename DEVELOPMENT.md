@@ -14,6 +14,7 @@ hermit-works/
 │   ├── plugin.json              # プラグインマニフェスト
 │   └── marketplace.json         # 配布元マニフェスト（自己参照）
 ├── .devcontainer/               # 開発環境（VSCode Dev Container）
+├── .vscode/                     # VSCode タスク定義（tasks.json）
 ├── .github/workflows/           # CI（push/pull_request時に検証手順を自動実行。validate.yml）
 ├── .github/dependabot.yml       # 依存更新の自動PR設定（GitHub Actions の SHA ピン留め更新）
 ├── agents/                      # 専門家エージェント定義（51体、グループ別プレフィックス）
@@ -34,7 +35,9 @@ hermit-works/
 VSCode Dev Container（`.devcontainer/`）で開発します。コンテナには Claude Code CLI・gh 等が
 セットアップされ、`~/.claude`（認証情報・プラグイン設定）は Docker ボリューム `claude-config` に
 永続化されます。起動時チェック（git safe.directory 登録・gh/claude の認証状態確認）は
-`postStart.sh` が行います。
+`postStart.sh` が行います。マージ済みブランチの後始末（`scripts/git-cleanup-branch.sh`）は
+`.vscode/tasks.json` に定義した VSCode タスクからも実行できます（既定 `develop`、入力欄で起点
+ブランチを上書き可。詳細は [CONTRIBUTING.md](CONTRIBUTING.md) 9.1）。
 
 ## プラグインの読み込みの仕組み（自己参照マーケットプレイス）
 
