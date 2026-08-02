@@ -37,6 +37,7 @@ on:
   push:
     branches:
       - main
+      - develop
   pull_request: {}
 
 # 同一ブランチ・同一PRでの新しいpushがあれば、実行中の古いジョブは打ち切る
