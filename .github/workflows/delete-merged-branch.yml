@@ -1,0 +1,96 @@
+name: delete-merged-branch
+
+# develop 向け PR がマージされた際、マージ済みの作業ブランチ（head）をリモートから自動削除する
+# ワークフロー。ブランチ運用の正本は CONTRIBUTING.md 9.1「ブランチ運用」であり、本ワークフローは
+# その運用（作業ブランチは develop から分岐し、develop 向け PR で統合する）を前提に、リモート側の
+# 後始末のみを自動化するものである。
+#
+# 対象範囲（削除するブランチ）:
+#   - develop を base とする、実際にマージされた PR の head ブランチのみ。
+#   - main・develop 自体、および fork からの PR の head ブランチは削除対象外である
+#     （下記 if 条件で多層に判定している）。
+#   - dependabot（.github/dependabot.yml で target-branch: develop 設定）が作成する
+#     更新PRの head ブランチも、develop を base とし、fork でもないため削除対象に含まれる。
+#     これは意図した挙動である（人手のPRと同様に後始末が必要なため）。
+#
+# 「Automatically delete head branches」（GitHub リポジトリ設定）を採用しない理由:
+#   同設定は base ブランチを問わず全ての PR の head を削除するため、develop→main の
+#   リリース PR（9.2）で head=develop 自体が削除される事故を構造的に防げない。
+#   本ワークフローは base=='develop' の PR に限定することで、この事故を設計上排除している。
+#
+# scripts/git-cleanup-branch.sh（ローカル側の後始末）との分担:
+#   本ワークフローはリモート追跡ブランチの削除のみを行う。ローカルの追跡ブランチ・
+#   マージ済みローカルブランチの削除は、引き続き利用者が
+#   `bash scripts/git-cleanup-branch.sh develop` を実行すること
+#   （9.1 参照。本ワークフローはこの手順を代替しない）。
+#
+# 認証・シークレット: 外部シークレットは不要である。ubuntu-latest ランナーに同梱の gh CLI と、
+# GitHub Actions が自動発行する GITHUB_TOKEN（既定の書き込み権限は下記 permissions で
+# contents: write のみに絞っている）のみで完結する。
+#
+# checkout を行わない理由: ブランチ削除は GitHub API（gh api）呼び出しのみで完結し、
+# リポジトリの内容を参照する必要がないため、actions/checkout を含む外部アクションは
+# 一切使用していない。
+
+on:
+  pull_request:
+    types: [closed]
+
+# 同一 PR で closed イベントが短時間に重複した場合でも、実行中の古いジョブを打ち切って
+# 後発の1回だけを完走させる（削除処理自体は冪等だが、CI時間節約のため標準的な設定を踏襲）。
+concurrency:
+  group: delete-merged-branch-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  delete-branch:
+    runs-on: ubuntu-latest
+    # ブランチ削除のAPI呼び出し1回のみの軽量ジョブのため短めに設定。
+    timeout-minutes: 5
+    # 削除対象を多層に絞り込む（いずれか1つでも満たさなければジョブ自体を実行しない）。
+    #   1. マージされた PR であること（クローズのみ＝マージされずに閉じたPRは対象外）
+    #   2. base が develop であること（develop→main のリリースPRで head=develop が
+    #      削除される事故を防ぐ。上記コメント参照）
+    #   3. head が同一リポジトリ内のブランチであること（fork からの PR は対象外。
+    #      fork の head ブランチは他者のリポジトリにあり削除権限も対象外のため。
+    #      fork元リポジトリが削除済みで head.repo が null になるケースも、
+    #      null チェックにより明示的にスキップ対象とする）
+    #   4. head が main・develop 自身でないこと（1〜3を通過した場合でも念のための多層防御）
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'develop' &&
+      github.event.pull_request.head.repo != null &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != 'main' &&
+      github.event.pull_request.head.ref != 'develop'
+    steps:
+      - name: マージ済みブランチの削除
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # head.ref は PR 投稿者が指定可能な値のため、run 中で ${{ }} 展開に直接埋め込まず
+          # env 経由の変数として渡す（シェルへのスクリプトインジェクション対策）。
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "削除対象ブランチ: ${HEAD_REF}"
+          if error_output=$(gh api --method DELETE "repos/${REPO}/git/refs/heads/${HEAD_REF}" 2>&1); then
+            echo "削除に成功しました。"
+          else
+            exit_code=$?
+            # 既に削除済み（例: Automatically delete head branches 設定や手動削除との競合）の
+            # 場合は 422 Reference does not exist が返る。この場合は成功扱いでスキップする。
+            if printf '%s' "$error_output" | grep -qi "Reference does not exist"; then
+              echo "既に削除済みのためスキップします。"
+            else
+              # gh api のレスポンス本文には head.ref 等の非機微情報のみ含まれるため
+              # そのままログ出力するが、認証情報等の機微値は元々含まれない。
+              # gh のバージョンアップ等でエラー出力形式が変わった場合は、機微情報が
+              # 含まれないか再確認すること。
+              echo "::error::ブランチ削除に失敗しました: ${error_output}"
+              exit "$exit_code"
+            fi
+          fi
