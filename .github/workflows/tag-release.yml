@@ -1,0 +1,139 @@
+name: tag-release
+
+# develop→main のリリース PR（CONTRIBUTING.md 9.2）がマージされた際、タグ v<version> を
+# 自動付与するワークフロー。従来は手動（CONTRIBUTING 9.2 手順10〜11・release.md 手順10〜11）
+# だった付与作業を、マージ契機で自動化するものである。
+#
+# タグを打つ対象コミット（マージコミットの「第2親」）について:
+#   develop→main のリリース PR をマージすると、GitHub はデフォルトで通常のマージコミットを
+#   作成する（squash/rebase ではない）。このマージコミットの親は
+#     第1親 = マージ前の main HEAD
+#     第2親 = マージ前の develop HEAD（リリース準備コミットを含む）
+#   の2つである。マージコミット自体にタグを打つと、そのコミットは main 側にしか存在せず
+#   develop の履歴に含まれないため、scripts/git-changelog.sh の起点検出が壊れる。
+#   第2親（develop 側 HEAD）に打てば、リリース準備コミット以降に develop へ入った変更も
+#   当該リリースに含まれる扱いになり、changelog の範囲とも整合する。
+#
+# squash/rebase 検知:
+#   何らかの理由でマージ方式が変わり、マージコミットの親が2つでない場合は「第2親」という
+#   前提が崩れるため、タグを打たずジョブを失敗させて異常を可視化する（正しくない対象に
+#   タグを打ってしまうことを防ぐ）。
+#
+# 冪等性:
+#   同一イベントの再実行等でタグが既に存在する場合、同一コミットを指していれば成功扱いで
+#   スキップする。異なるコミットを指している場合は不整合の可能性があるため失敗させる
+#   （タグの指す先を無言で上書きしない）。
+#
+# 認証・シークレット: 外部シークレットは不要である。ubuntu-latest ランナーに同梱の gh CLI と、
+# GitHub Actions が自動発行する GITHUB_TOKEN（既定の書き込み権限は下記 permissions で
+# contents: write のみに絞っている）のみで完結する。
+#
+# checkout を行わない理由: マージコミットの親情報は commits API、バージョンは contents API
+# （ref 指定で第2親時点の .claude-plugin/plugin.json を取得）、タグ作成は git refs API で
+# 完結し、リポジトリの内容をローカルに展開する必要がないため、actions/checkout を含む
+# 外部アクションは一切使用していない（gh api のみで完結させる）。
+#
+# GITHUB_TOKEN で作成したタグは他ワークフローを起動しない:
+#   GITHUB_TOKEN を使って作成したタグ（ref）は、GitHub の仕様により push イベント等の
+#   新規ワークフロー実行のトリガーにならない（無限ループ的な連鎖実行を防ぐ既定動作）。
+#   このため本ワークフローがタグを作成しても、それを契機に別の CI が起動することはない。
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+# 同一 PR で closed イベントが短時間に重複した場合でも、実行中の古いジョブを打ち切って
+# 後発の1回だけを完走させる（タグ作成処理自体は冪等だが、CI時間節約のため標準的な設定を
+# 踏襲する）。
+concurrency:
+  group: tag-release-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  tag-release:
+    runs-on: ubuntu-latest
+    # commits API・contents API・git refs API 呼び出し数件のみの軽量ジョブのため短めに設定。
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    # 対象を多層に絞り込む（いずれか1つでも満たさなければジョブ自体を実行しない）。
+    #   1. マージされた PR であること（クローズのみ＝マージされずに閉じたPRは対象外）
+    #   2. base が main であること（on.pull_request.branches でも main に絞っているが、
+    #      多層防御として if 条件でも重ねて判定する）
+    #   3. head が develop であること（develop→main のリリース PR 以外を対象外とする）
+    #   4. head が同一リポジトリ内のブランチであること（fork からの PR は対象外。
+    #      fork元リポジトリが削除済みで head.repo が null になるケースも、
+    #      null チェックにより明示的にスキップ対象とする）
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'develop' &&
+      github.event.pull_request.head.repo != null &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: マージコミットの親数確認とタグ対象コミットの決定
+        env:
+          # merge_commit_sha は GitHub 側が算出した値であり PR 投稿者が自由に指定できる
+          # 値ではないが、他ステップと同様 ${{ }} を run へ直接埋め込まず env 経由で渡す。
+          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          commit_json=$(gh api "repos/${REPO}/commits/${MERGE_COMMIT_SHA}")
+          parent_count=$(printf '%s' "$commit_json" | jq '.parents | length')
+          if [ "$parent_count" -ne 2 ]; then
+            echo "::error::マージコミットの親が2つではありません（squash/rebase等でマージされた可能性があります）: merge_commit_sha=${MERGE_COMMIT_SHA} 親数=${parent_count}"
+            exit 1
+          fi
+          # 第2親 = マージ前の develop HEAD（本ファイル冒頭コメント参照）。
+          second_parent_sha=$(printf '%s' "$commit_json" | jq -r '.parents[1].sha')
+          echo "タグ対象コミット（develop側HEAD、マージコミットの第2親）: ${second_parent_sha}"
+          echo "TAG_TARGET_SHA=${second_parent_sha}" >> "$GITHUB_ENV"
+
+      - name: バージョンの取得（タグ対象コミット時点の plugin.json）
+        run: |
+          set -euo pipefail
+          plugin_json=$(gh api "repos/${REPO}/contents/.claude-plugin/plugin.json?ref=${TAG_TARGET_SHA}" --jq '.content' | base64 -d)
+          version=$(printf '%s' "$plugin_json" | jq -r '.version')
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::plugin.json の version が semver 形式（例: 1.2.3）ではありません: '${version}'"
+            exit 1
+          fi
+          echo "検出したバージョン: v${version}"
+          echo "TAG_NAME=v${version}" >> "$GITHUB_ENV"
+
+      - name: タグの作成（冪等性確認込み）
+        run: |
+          set -euo pipefail
+          existing_sha=""
+          # stdout・stderr をまとめて捕捉し、成功時はJSON（stdout）、失敗時はエラー内容
+          # （stderr）を response に入れる。404（タグ未存在）は「未存在→作成へ進む」扱いと
+          # し、それ以外の失敗（認証エラー・レート制限等）は「未存在」と混同せず失敗させる。
+          if response=$(gh api "repos/${REPO}/git/ref/tags/${TAG_NAME}" 2>&1); then
+            existing_sha=$(printf '%s' "$response" | jq -r '.object.sha')
+          else
+            exit_code=$?
+            if printf '%s' "$response" | grep -qi "HTTP 404"; then
+              echo "タグ ${TAG_NAME} は未存在のため新規作成します。"
+            else
+              echo "::error::タグ存在確認に失敗しました（404以外のエラーのため未存在と断定せず失敗させます）: ${response}"
+              exit "$exit_code"
+            fi
+          fi
+          if [ -n "$existing_sha" ]; then
+            if [ "$existing_sha" = "$TAG_TARGET_SHA" ]; then
+              echo "タグ ${TAG_NAME} は既に対象コミット（${TAG_TARGET_SHA}）を指しているため、成功扱いでスキップします。"
+              exit 0
+            else
+              echo "::error::タグ ${TAG_NAME} は既に別のコミット（${existing_sha}）を指しています。対象コミット（${TAG_TARGET_SHA}）と一致しないため、指す先を無言で上書きせず失敗させます。"
+              exit 1
+            fi
+          fi
+          gh api --method POST "repos/${REPO}/git/refs" \
+            -f ref="refs/tags/${TAG_NAME}" \
+            -f sha="${TAG_TARGET_SHA}" >/dev/null
+          echo "タグ ${TAG_NAME} を ${TAG_TARGET_SHA} に作成しました。"
