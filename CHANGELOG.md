@@ -6,6 +6,45 @@
 リリースは利用者面資材（`agents/`・`commands/`・`skills/`・`.claude-plugin/plugin.json`・
 `README.md`）に変更が及ぶ場合のみ発火する。
 
+## [0.5.0] - 2026-08-02
+
+### Added
+- 計画ファイルの冒頭に案件ヘッダー「背景（Why）・案件の完了条件」（各2行以内）を、変更を伴う案件には
+  「スコープ外」欄（2行以内）を導入（`mgmt-coordinator`・`/hw:plan`・`/hw:request`）。成果統合時に
+  スコープ外の変更の混入がないかを確認する手順も追加
+- `/hw:report` に「コスト効率」観点（エージェント別キャッシュヒット率の計測・著しく低いエージェントの
+  検知）を新設し、`scripts/aggregate-agent-token-usage.sh` に cache_hit_rate 列を追加。あわせて
+  エージェントの effort ティアリングを導入し、保守的に4体（ana-data/docs-l10n/docs-user/mgmt-pm）へ
+  適用（CONTRIBUTING 2.3/2.5 に正典化）
+- `/hw:init` に時点レポート（`.hw/reports/standup*`・`report-*`）の `.gitignore` 除外提案を追加
+  （パターンごとの個別選択・コミット済みの場合の `git rm --cached` 提案込み。承認なしに追記しない）
+- `mgmt-release` にバージョン更新・リリース要否の判定手順（発火判定 → 種別判定 → 操作的判定テストの
+  3ステップ。利用者側方針が無い場合はリリース手順の構築を最初のタスクとして提案）を追加
+- develop マージ済み作業ブランチをリモート自動削除する CI ワークフロー
+  （`.github/workflows/delete-merged-branch.yml`）を新設
+- リポジトリ保守用のローカル `/release` コマンド（`.claude/commands/release.md`）と、Claude Code
+  permissions のチーム共有設定（`.claude/settings.json`。承認境界・リリース保護・破壊的操作の
+  deny/ask）を新設
+
+### Changed
+- `/hw:standup` の出力を課題台帳型テンプレートへ全面改訂。課題表（No./起票日/優先度/状態/課題/詳細）は
+  優先度の降順（高→中→低）・同一優先度内は起票日の昇順で並べ、No. は表示順の通し番号に変更（実行を
+  またいだ固定番号・欠番許容は廃止。実行をまたぐ引き継ぎキーは課題タイトル）。保存先を実行ごとの
+  新規ファイル `standup_<YYYYMMDD-hhmmss>.md` に変更（同日追記を廃止。旧 `standup-*.md` からの
+  引き継ぎ手順あり）
+- バージョニング方針を改訂: 利用者面資材（`agents/`・`commands/`・`skills/`・
+  `.claude-plugin/plugin.json`・`README.md`）に変更が及ぶ場合のみリリース発火とし、MINOR/PATCH を
+  「利用者が変更を意識する必要があるか」で判定する V-1〜V-3 を導入（CONTRIBUTING 9.2・DESIGN 2.31）。
+  面リスト非該当パスのフォールバック規定（既定は発火なし・配布内容への実質影響時は発火側）も追加
+- ブランチ運用・リリース手順を develop（統合ライン）/ main（リリース確定ライン）の2ブランチ方式へ
+  見直し（CONTRIBUTING 9章）。`scripts/git-cleanup-branch.sh` の既定起点を develop 化し、削除前
+  マージ済み確認の起点も develop に変更。VSCode タスク（ブランチ掃除）を新設
+- CI の Claude Code CLI インストールを、固定バージョンの直接取得＋SHA256 照合方式へ切替（B9）
+
+### Fixed
+- 計画ファイルの「本案件のガードレール」欄の適用条件を「変更を伴う案件では」に統一し、
+  `mgmt-coordinator` と `/hw:request`・`/hw:plan` 間の記述齟齬を解消
+
 ## [0.4.0] - 2026-08-01
 
 ### Added
