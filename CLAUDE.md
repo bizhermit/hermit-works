@@ -19,7 +19,8 @@ CONTRIBUTING.md・DESIGN.md は全文を読まず、冒頭目次で該当する�
 
 ## 変更後の検証（必須）
 
-資材の変更は作業ブランチ（`feature/<topic>` 等）で行い、main への直接コミットはしない（正本は CONTRIBUTING.md 9章）。
+資材の変更は `develop` から分岐した作業ブランチ（`feature/<topic>` 等）で行い、PR は `develop` 向けとし、main・develop への直接コミットはしない
+（develop の例外はリリース準備コミットのみ。正本は CONTRIBUTING.md 9章）。
 資材を変更したら、完了前に以下を実行してエラー・警告を解消する（詳細は CONTRIBUTING.md 5章（正本）。保守環境まわりは DEVELOPMENT.md「検証（変更後は必須）」）。
 
 ```bash

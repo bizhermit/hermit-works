@@ -6,3 +6,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # 更新PRの向き先を統合ライン develop へ（既定ブランチ main への直行を避ける。
+    # リリース確定は develop→main のリリースPRを経る。CONTRIBUTING.md 9章参照）。
+    target-branch: "develop"

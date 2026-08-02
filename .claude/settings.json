@@ -39,11 +39,7 @@
       "Bash(gh pr close *)",
       "Bash(git reset --hard *)",
       "Bash(git clean *)",
-      "Bash(git branch -D *)",
-      "Edit(.claude-plugin/plugin.json)",
-      "Edit(CHANGELOG.md)",
-      "Write(.claude-plugin/plugin.json)",
-      "Write(CHANGELOG.md)"
+      "Bash(git branch -D *)"
     ]
   }
 }
