@@ -1,4 +1,22 @@
 #!/usr/bin/env bash
+#
+# ブランチ運用（作業ブランチは develop から分岐・派生元は develop 統合ライン）に合わせ、
+# 対象ブランチへ切り替えたうえで、リモートで削除済み（upstream追跡が [gone]）のローカル
+# 作業ブランチをまとめて削除する。引数省略時の既定切り替え先は develop とする
+# （main 等 develop 以外を対象にしたい場合は第1引数で明示する。以前は origin の
+# デフォルトブランチ（main）を自動検出していたが、作業ブランチ起点が develop のため
+# 都度の引数明示が手間だった。2026-08-02 に既定 develop へ変更）。
+#
+# 実行例:
+#   bash scripts/git-cleanup-branch.sh          # develop に切り替えて cleanup
+#   bash scripts/git-cleanup-branch.sh feature/x # feature/x に切り替えて cleanup
+#   # VSCode からは .vscode/tasks.json 経由でも実行可能（既定 develop・入力欄で上書き可）
+#
+# 回帰テスト:
+#   分岐（ブランチ名検証の case 文）・パース処理（[gone] 判定の awk）は存在するが、
+#   いずれも1〜2行の単純な等値比較・パターンマッチにとどまり誤り混入リスクが低く、
+#   他資材の合否判定にも関与しないため CONTRIBUTING.md 8.4 の基準に実質該当しないと
+#   判断し、回帰テストは新設していない（既定 develop 化後もこの判断に変更なし）。
 set -euo pipefail
 
 # git リポジトリ外での実行を早期に検出する（git-changelog.sh と同様のチェック）。
@@ -9,7 +27,7 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
-target_branch="${1:-}"
+target_branch="${1:-develop}"
 
 # 作業ディレクトリがクリーンかチェック
 if [ -n "$(git status --porcelain)" ]; then
@@ -26,18 +44,6 @@ is_safe_branch_name() {
     (*) return 0 ;;
   esac
 }
-
-# 引数が無ければデフォルトブランチを取得
-if [ -z "$target_branch" ]; then
-  echo "Detecting default branch from remote..."
-  git remote set-head origin -a >/dev/null 2>&1 || true
-  target_branch=$(git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's!origin/!!' || true)
-
-  if [ -z "$target_branch" ] || [ "$target_branch" = "HEAD" ]; then
-    echo "Error: Could not detect default branch from origin." >&2
-    exit 1
-  fi
-fi
 
 if ! is_safe_branch_name "$target_branch"; then
   echo "Error: Suspicious branch name detected: $target_branch" >&2

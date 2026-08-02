@@ -985,12 +985,14 @@ CI 定義は以下の方針に従います。
 - `develop` 向け PR のマージ時には、`.github/workflows/delete-merged-branch.yml` がリモートの
   作業ブランチを自動削除します（対象は `develop` を base とするマージ済み PR の head ブランチ
   のみ。main・develop 自体と fork のブランチは削除しません）。
-- マージ済みブランチの後始末には `bash scripts/git-cleanup-branch.sh [<既定ブランチ名>]` を
-  使います。作業ブランチの起点は `develop` であるため、**引数に `develop` を明示して**
-  実行してください（`bash scripts/git-cleanup-branch.sh develop`）。引数省略時は origin の
-  デフォルトブランチ（`main`）を自動検出するため、`develop` 起点で掃除する場合は省略できません。
-  指定した起点ブランチを最新化したうえで、リモート追跡がなくなった（上記ワークフローによる
-  自動削除、またはマージ済みで削除済み）ローカルブランチを一括削除します。
+- マージ済みブランチの後始末には `bash scripts/git-cleanup-branch.sh [<起点ブランチ名>]` を
+  使います。作業ブランチの起点は `develop` であるため、**引数省略時の既定は `develop`**
+  です（`bash scripts/git-cleanup-branch.sh` のみで `develop` 起点の掃除ができます）。
+  `main` 等 `develop` 以外を起点にしたい場合のみ第1引数で明示してください
+  （`bash scripts/git-cleanup-branch.sh main`）。VSCode からは `.vscode/tasks.json` 経由
+  でも実行でき、入力欄（既定値 `develop`）でブランチ名を上書きできます。指定した起点
+  ブランチを最新化したうえで、リモート追跡がなくなった（上記ワークフローによる自動削除、
+  またはマージ済みで削除済み）ローカルブランチを一括削除します。
 - `main` は [GitHub のブランチ保護](https://docs.github.com/ja/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
   （PR 必須・直接 push 禁止）を有効化することを推奨します。適用は GitHub 側の設定操作であり、
   利用者本人が行います（本プラグインは適用操作を代行しません）。ブランチ単位でマージ方式を制限
@@ -1087,7 +1089,7 @@ CI 定義は以下の方針に従います。
       （または1コミットに整えたうえで）とし、件名が Conventional Commits に準拠している
 - [ ] 後発マージの場合、`develop` を取り込み（rebase 推奨）5章の検証を再実行してからマージした
 - [ ] `commands/show-org.md` の競合は手マージせず `scripts/generate-show-org.sh` で再生成した
-- [ ] マージ済みブランチは `bash scripts/git-cleanup-branch.sh develop`（起点を明示）で後始末した
+- [ ] マージ済みブランチは `bash scripts/git-cleanup-branch.sh`（既定 `develop`。VSCode タスクからも可）で後始末した
 - [ ] version・CHANGELOG の更新は作業ブランチと分離し、`develop` 上でリリース準備コミットとして
       一括実施した
 - [ ] リリース PR（`develop`→`main`）は squash マージせず、マージコミット方式で利用者本人が
