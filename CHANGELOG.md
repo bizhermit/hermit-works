@@ -23,6 +23,10 @@
   点検観点を拡充。DESIGN 2.22。保守用 CLAUDE.md にも自己適用版を追加）
 - 保守運用の都合（保守用の定期実行との連携等）を理由に配布対象の資材を変更しない原則を規約化
   （CONTRIBUTING 1.10 正本・DESIGN・保守用 CLAUDE.md）
+- リリース準備コミットの作成先を `develop` への直接コミットから、`develop` から分岐した
+  `release/v<version>` ブランチ＋`develop` 向け PR（リリース準備 PR）経由へ変更（`develop` の
+  ブランチ保護〔PR 必須〕と整合。develop への直接コミット例外を廃止。CONTRIBUTING 9章・
+  DESIGN 2.32 追補・保守用 `/release` コマンド。裁定 2026-08-03）
 
 ## [0.5.0] - 2026-08-02
 
