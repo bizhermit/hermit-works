@@ -88,6 +88,8 @@ description: hermit-works リポジトリ自身のリリース作業（CONTRIBUT
       `git ls-remote --tags origin "refs/tags/v<version>"` でタグ `v<version>` が自動作成されて
       いることを確認する。
     - タグが確認できれば、手動でのタグ付与・push は行わず、手順12（完了報告）へ進む。
+    - 続けて `/release-notes` でリリースノートのドラフト作成・登録に進められる（別セッションからの
+      単独実行も可）。
 
 11. **CI 失敗時のフォールバック**: CI が失敗している場合（`gh run list` 上のワークフロー実行が
     失敗、または一定時間待ってもタグが作成されない場合）のみ、実行ログから失敗原因（squash／
