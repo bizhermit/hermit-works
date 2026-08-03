@@ -45,8 +45,9 @@
 #      (c) 非リーダー全件の本文に TK-2/E-1統合文（正典⑤節。連携節の実行主体明文化。
 #          `## 連携` 節冒頭に挿入される1行）が逐語存在するかを検証する（欠落はERROR。
 #          リーダーは対象外＝委任行為自体が業務のため）。
-#      (d) 利用者資材を直接読む commands/skills 固定4ファイル（skills/conventions/SKILL.md・
-#          commands/optimize-assets.md・commands/audit-assets.md・commands/draft-docs.md）に、
+#      (d) 利用者資材を直接読む commands/skills 固定5ファイル（skills/conventions/SKILL.md・
+#          skills/repo-map/SKILL.md・commands/optimize-assets.md・commands/audit-assets.md・
+#          commands/draft-docs.md）に、
 #          注入耐性文言（正典: scripts/lib/guidelines.sh の GUIDELINE_INJECTION_NOTE_LINE 定数。P-4a/P-4b
 #          対応）が逐語存在するかを検証する（欠落はERROR。前後文脈・行位置には依存しない
 #          存在検証）。対象ファイルが存在しない検証対象ディレクトリ（テストフィクスチャ等）は
@@ -78,6 +79,15 @@
 #          原則4「検知手段のない規範は追加しない」対応）が逐語存在するかを検証する
 #          （欠落はERROR。(d)(f)(g)と同様、前後文脈・行位置に依存しない存在検証で、
 #          対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする）。
+#      (i) 非リーダー（is_leader_agent_name が偽）の agents/*.md 本文に、context: fork
+#          スキル呼び出しトークン（正典: scripts/lib/guidelines.sh の FORK_SKILL_CALL_TOKENS
+#          定数＝`hw:repo-map`・`hw:conventions`。CONTRIBUTING 4.2 運用規範「fork スキルは
+#          メイン会話・リーダー層から呼ぶ」対応。2026-08-03案件issue28 sec-audit差し戻し
+#          M-s3・CONTRIBUTING 1.4 原則4「検知手段のない規範は追加しない」対応）が部分文字列
+#          として含まれていないかを検証する（検出はERROR。リーダー層（mgmt-coordinator・
+#          *-lead）は運用規範上呼び出しが許容されるため対象外。commands/・skills/ 本文は
+#          これらのスキルを実際に呼び出す定型手順を持つため（正当な呼び出し）検査対象に
+#          含めない）。
 #   10. エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1。従来の数量チェック
 #       [5] が README.md のみを対象とし、.claude-plugin/*.json・DESIGN.md・
 #       DEVELOPMENT.md が死角になっていた是正）
@@ -956,7 +966,7 @@ done
 # (c) 非リーダー全件の本文に TK-2/E-1統合文（GUIDELINE_TK2_E1_LINE。`## 連携` 節冒頭の
 #     実行主体明文化）が逐語存在するかを検証する。(a)と同様、frontmatterの妥当性とは
 #     無関係（本文側の検証のため）に判定する。リーダー判定は(b)と同様ファイル名基準。
-# (d) 利用者資材を直接読む commands/skills 固定4ファイル（COMMANDS_SKILLS_INJECTION_FILES）
+# (d) 利用者資材を直接読む commands/skills 固定5ファイル（COMMANDS_SKILLS_INJECTION_FILES）
 #     に、注入耐性文言（GUIDELINE_INJECTION_NOTE_LINE。P-4a/P-4b対応）が逐語存在するかを
 #     検証する。前後文脈・行位置には依存しない存在検証。対象ファイル不在時は静かに
 #     スキップする。
@@ -978,6 +988,7 @@ GUIDELINE_MISSING_COUNT=0
 DISALLOWED_MISSING_COUNT=0
 GUIDELINE_TK2_E1_MISSING_COUNT=0
 GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT=0
+FORK_SKILL_CALL_HITS=0
 
 for f in "${AGENT_FILES[@]}"; do
   [ -f "$f" ] || continue
@@ -1026,6 +1037,16 @@ for f in "${AGENT_FILES[@]}"; do
     GUIDELINE_TK2_E1_MISSING_COUNT=$((GUIDELINE_TK2_E1_MISSING_COUNT + 1))
   fi
 
+  # --- (i) 非リーダーによる context: fork スキル呼び出し検出（CONTRIBUTING 4.2 運用規範。
+  #     2026-08-03案件issue28 sec-audit差し戻し M-s3対応。CONTRIBUTING 1.4 原則4対応） -----
+  for fork_skill_token in "${FORK_SKILL_CALL_TOKENS[@]}"; do
+    if [[ "$file_content" == *"$fork_skill_token"* ]]; then
+      add_issue 'ERROR' 'fork-skill-call-non-leader' "agents/$(basename "$f")" \
+        "非リーダーエージェント（name: '${agent_name}'）の本文に context: fork スキル呼び出しトークン '${fork_skill_token}' が見つかりました（CONTRIBUTING 4.2 運用規範により、fork スキル（hw:repo-map・hw:conventions）はメイン会話・リーダー層からのみ呼び出す）"
+      FORK_SKILL_CALL_HITS=$((FORK_SKILL_CALL_HITS + 1))
+    fi
+  done
+
   # --- (b) 非リーダーのdisallowedTools整合検証 --------------------------------
   if [ "$frontmatter_ok" -eq 0 ]; then
     continue
@@ -1067,7 +1088,7 @@ for f in "${AGENT_FILES[@]}"; do
 done
 
 # --- (d) 利用者資材を直接読む commands/skills の注入耐性文言（P-4a/P-4b） -------
-# 対象は COMMANDS_SKILLS_INJECTION_FILES の固定4件のみ（上記定義参照）。ファイルが
+# 対象は COMMANDS_SKILLS_INJECTION_FILES の固定5件のみ（上記定義参照）。ファイルが
 # 存在しない検証対象ディレクトリ（テストフィクスチャ等）では、セクション6・10(b)と
 # 同様にERRORにはせず静かにスキップする（本チェック追加のためだけに無関係な既存
 # フィクスチャ・テストを大量に更新せずに済むようにするための設計判断）。
@@ -1406,7 +1427,7 @@ echo "対象件数: agents=$agent_total / commands=$command_total / skills=$skil
 echo "README突合: エージェント README=$AGENT_README_COUNT/実体=$AGENT_FILE_COUNT  コマンド README=$CMD_README_COUNT/実体=$CMD_FILE_COUNT  スキル README=$SKILL_README_COUNT/実体=$SKILL_FILE_COUNT"
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
-echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件"
+echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件 / 非リーダーfork スキル呼び出し検出=${FORK_SKILL_CALL_HITS}件"
 echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
 echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
 echo ''
