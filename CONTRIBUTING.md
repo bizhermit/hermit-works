@@ -833,8 +833,17 @@ background: false
    の frontmatter必須項目・命名規則・重複、README 記載のエージェント一覧・コマンド一覧・スキル一覧と
    実ファイル構成の整合性、`commands/show-org.md` の生成差分、秘密情報混入チェック
    （シークレットスキャン）、エージェント作業ガードレール（共通6短文・`disallowedTools`・
-   TK-2/E-1委任制限文の逐語一致）、数量表記整合を検証する bash スクリプトです（devcontainer移行に
-   伴い旧 `validate.ps1` から移行。追加ランタイム不要の方針は維持）。
+   TK-2/E-1委任制限文の逐語一致）、数量表記整合、Markdown文書（README.md・CLAUDE.md・CONTRIBUTING.md・
+   DESIGN.md・DEVELOPMENT.md・`agents/*.md`・`commands/*.md`・`skills/*/SKILL.md`）中のバッククォート付き
+   リポジトリ内パス参照の実在検証（`.hw/` 配下・プレースホルダ・ワイルドカード〔glob展開で0件一致は
+   ERROR〕・利用者側資材の例示パス明示除外リストの4分類を除外し、各分類のスキップ件数を必ず出力。
+   対象文書全体からの抽出トークンが0件の場合も検証の空振りとしてERRORとする）を検証する bash
+   スクリプトです（devcontainer移行に伴い旧 `validate.ps1` から移行。追加ランタイム不要の方針は維持）。
+
+   文書中で利用者側資材の例示パス（本リポジトリ内には実在しないことを承知のうえでの例示。例:
+   `.github/copilot-instructions.md`）を新たに記載する場合は、`scripts/validate.sh` セクション12の
+   `DOC_PATH_REF_EXCLUDE_LIST` へ当該パスを追加してください（追加しないと存在しないパスとして
+   ERRORになります）。
 
    README の「使い方」「スキル」表の見出しを変更する場合は、`commands/help.md` の実行時抽出（見出し
    アンカー）も併せて確認してください。

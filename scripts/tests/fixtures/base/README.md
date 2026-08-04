@@ -1,6 +1,6 @@
 # Test Fixture
 
-hermit-works `scripts/validate.sh` の回帰テスト用に用意した最小フィクスチャ。
+hermit-works の validate.sh の回帰テスト用に用意した最小フィクスチャ。
 実運用の README.md と同じ構造（見出し・テーブル・件数記載）を持つが、内容はテスト専用のダミー。
 
 ## 使い方

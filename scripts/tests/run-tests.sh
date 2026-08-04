@@ -2669,6 +2669,201 @@ EOF
   return $ok
 }
 
+# ---- 文書内パス参照検証（issue #34 セクション12） ---------------------------------
+
+test_doc_path_ref_existing_path_ok() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 実在するパスへのバッククォート参照はPASSすること。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+詳細は `agents/eng-backend.md` を参照。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "実在パス参照はexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' "実在パス参照はERROR 0件" || ok=1
+  assert_not_contains 'doc-path-ref-missing' "doc-path-ref-missingは検知されない" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_missing_path_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 実在しないパスへのバッククォート参照はERROR検知されること。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+詳細は `agents/nonexistent-agent.md` を参照。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "非実在パス参照はexit 1" || ok=1
+  assert_contains 'doc-path-ref-missing' "doc-path-ref-missingカテゴリで検知" || ok=1
+  assert_contains 'README.md' "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "'agents/nonexistent-agent.md'" "非実在パスがメッセージに含まれる" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_placeholder_skipped() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # プレースホルダ（<...>）を含むパス形トークンは実在検証をスキップすること
+  # （実ファイルが存在しなくてもERRORにならない）。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+例: `agents/<エージェント名>.md`
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "プレースホルダはexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' "プレースホルダはERROR 0件" || ok=1
+  assert_not_contains 'doc-path-ref-missing' "doc-path-ref-missingは検知されない" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_placeholder_ellipsis_skipped() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 差し戻し対応 qa-L2: プレースホルダ判定は `<...>` 表記だけでなく三点リーダー(…)
+  # 単独でも成立する（'<' を含まない）。既存の test_doc_path_ref_placeholder_skipped
+  # は `<...>` 表記のみを検証しており、'…' 単独分岐が未検証だったための最小ケース。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+例: `skills/…/SKILL.md`
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "三点リーダー(…)単独のプレースホルダはexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' "三点リーダー(…)単独のプレースホルダはERROR 0件" || ok=1
+  assert_not_contains 'doc-path-ref-missing' "doc-path-ref-missingは検知されない" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_traversal_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 差し戻し対応 sec-L1/qa-L3: `..` を含むパス形トークンはファイルシステム参照や
+  # 除外分類に到達する前に短絡し、doc-path-ref-traversal カテゴリでERRORとする
+  # （validate.sh セクション12コメント参照）。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+例: `agents/../CLAUDE.md`
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "'..'含みトークンはexit 1" || ok=1
+  assert_contains 'doc-path-ref-traversal' "doc-path-ref-traversalカテゴリで検知" || ok=1
+  assert_contains "'agents/../CLAUDE.md'" "'..'含みトークンがメッセージに含まれる" || ok=1
+  assert_contains 'トラバーサル検出=1件' "サマリー行のトラバーサル検出件数に計上される" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_hw_prefix_skipped() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # .hw/配下（利用者側生成パス）は実在しなくても実在検証の対象外であること
+  # （T1の設計判断: 検出プレフィックスに.hw/を含めたうえで除外(1)にルーティングする）。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+例: `.hw/plans/2099-01-01-nonexistent-plan.md`
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 ".hw配下はexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' ".hw配下はERROR 0件" || ok=1
+  assert_not_contains 'doc-path-ref-missing' "doc-path-ref-missingは検知されない" || ok=1
+  # 差し戻し対応 qa-M2: 除外は機能するがカウンタ加算漏れ、という不具合クラスを
+  # 検出できるよう、サマリー行の除外(.hw配下)件数そのものを数値で検証する
+  # （fixtures/base の agents/eng-backend.md・qa-test.md 本文中に既存の .hw/ 配下
+  # バッククォート参照が4件あり、本ケースで注入した1件と合わせて5件になる）。
+  assert_contains '除外(.hw配下)=5件' "除外(.hw配下)のサマリー件数が加算されている" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_wildcard_present_ok() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # ワイルドカードパス参照は1件以上実在すればPASSすること。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+一覧: `agents/*.md`
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "ワイルドカード実在ありはexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' "ワイルドカード実在ありはERROR 0件" || ok=1
+  assert_not_contains 'doc-path-ref-wildcard-empty' "doc-path-ref-wildcard-emptyは検知されない" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_wildcard_empty_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # ワイルドカードパス参照が0件一致の場合はERROR検知されること。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+一覧: `agents/nonexistent-subdir/*.md`
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "ワイルドカード0件一致はexit 1" || ok=1
+  assert_contains 'doc-path-ref-wildcard-empty' "doc-path-ref-wildcard-emptyカテゴリで検知" || ok=1
+  assert_contains "'agents/nonexistent-subdir/*.md'" "ワイルドカードパスがメッセージに含まれる" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_exclude_list_skipped() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 利用者資材例示の明示除外リスト該当パスは実在しなくてもERRORにならないこと。
+  cat >> "$dir/README.md" <<'EOF'
+
+## 参考
+
+例: `.github/copilot-instructions.md`
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "除外リスト該当はexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' "除外リスト該当はERROR 0件" || ok=1
+  assert_not_contains 'doc-path-ref-missing' "doc-path-ref-missingは検知されない" || ok=1
+  # 差し戻し対応 qa-M2: 除外は機能するがカウンタ加算漏れ、という不具合クラスを
+  # 検出できるよう、サマリー行の除外(利用者資材例示リスト)件数を数値で検証する
+  # （fixtures/base には除外リスト該当パスが元々含まれないため、本ケースで
+  # 注入した1件のみが計上される想定）。
+  assert_contains '除外(利用者資材例示リスト)=1件' "除外(利用者資材例示リスト)のサマリー件数が加算されている" || ok=1
+  return $ok
+}
+
+test_doc_path_ref_extract_zero_detected() {
+  local d
+  d="$(mktemp -d)"
+  TMP_DIRS+=("$d")
+  # T1実証(3-3)と同じ構成: 対象文書(README.md)は1件以上存在するが、リポジトリ内
+  # パス形トークンを一切抽出できない場合、抽出0件としてERROR検知されること
+  # （検出パターンの変化による空振り検知。案件ガードレール(3)）。agents/commands/skills
+  # 配下を持たない最小ディレクトリのため、fixtures/base は使わず直接構築する。
+  cat > "$d/README.md" <<'EOF'
+# Empty Fixture
+
+パス参照を含まない最小フィクスチャ。
+`ordinary text without any path`
+EOF
+  run_validate "$d"
+  local ok=0
+  assert_exit 1 "パス形トークン抽出0件はexit 1" || ok=1
+  assert_contains 'doc-path-ref-extract-zero' "doc-path-ref-extract-zeroカテゴリで検知" || ok=1
+  assert_contains 'リポジトリ内パス形トークンを1件も抽出できませんでした' "抽出0件のメッセージ" || ok=1
+  return $ok
+}
+
 # ---- 本体リポジトリの回帰確認 ---------------------------------------------------
 
 test_real_repo_still_passes() {
@@ -2774,6 +2969,16 @@ run_test test_file_mode_out_of_scope_not_flagged
 run_test test_file_mode_correct_modes_ok
 run_test test_file_mode_check_skipped_without_git_repo
 run_test test_file_mode_check_skipped_without_git_binary
+run_test test_doc_path_ref_existing_path_ok
+run_test test_doc_path_ref_missing_path_detected
+run_test test_doc_path_ref_placeholder_skipped
+run_test test_doc_path_ref_placeholder_ellipsis_skipped
+run_test test_doc_path_ref_traversal_detected
+run_test test_doc_path_ref_hw_prefix_skipped
+run_test test_doc_path_ref_wildcard_present_ok
+run_test test_doc_path_ref_wildcard_empty_detected
+run_test test_doc_path_ref_exclude_list_skipped
+run_test test_doc_path_ref_extract_zero_detected
 run_test test_real_repo_still_passes
 
 finish_test_run
