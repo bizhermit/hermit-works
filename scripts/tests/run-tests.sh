@@ -2068,6 +2068,88 @@ EOF
   return $ok
 }
 
+# ---- commands/*.md 固定12ファイルのURL区切り規約行（scripts/validate.sh セクション9(j)。
+#      2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応） -------------
+#
+# 対象は commands/audit-assets.md・commands/draft-docs.md・commands/help.md・
+# commands/init.md・commands/optimize-assets.md・commands/plan.md・commands/report.md・
+# commands/request.md・commands/review.md・commands/routine.md・commands/show-org.md・
+# commands/standup.md の固定12件（COMMANDS_URL_DELIMITER_FILES）。base フィクスチャには
+# commands/request.md のみ存在し（文言あり済み。fixtures/base/commands/request.md 参照）、
+# 残る11件は意図的に含めていない（対象ファイル不在時は静かにスキップする仕様の確認を
+# 兼ねる。セクション9(d)(f)(g)(h)の同種テストと同じ設計）。
+
+test_guideline_url_delimiter_absent_files_skipped() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # base フィクスチャには12件のうち commands/request.md のみ存在し（文言あり済み）、
+  # 残る11件は存在しないため、その11件については(j)が静かにスキップされ
+  # guideline-url-delimiter-missing は出ないこと（正常系のexit 0にも影響しない）。
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "残り11ファイル不在はexit 0のまま" || ok=1
+  assert_not_contains 'guideline-url-delimiter-missing' "対象ファイル不在時は静かにスキップされる" || ok=1
+  return $ok
+}
+
+test_guideline_url_delimiter_present_not_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 残る11ファイルそれぞれにURL区切り規約行を配置する（10ファイルは実際のcommands/*.mdと
+  # 同じ字下げありの箇条書き文脈、show-org.mdのみ字下げなしの文脈にし、行位置・前後文脈に
+  # 依存しない存在検証であることを確認する）。新規追加ファイルによりREADME一覧との不整合
+  # （readme-sync）は別途発生するためexit自体は1になりうるが、guideline-url-delimiter-missing
+  # は出ないことのみを確認する（(d)(f)(g)(h)と同じ設計）。
+  for name in audit-assets draft-docs help init optimize-assets plan report review routine standup; do
+    cat > "$dir/commands/${name}.md" <<'EOF'
+---
+description: URL区切り規約行テスト用（フィクスチャ）。
+---
+
+## 作業方針
+   - URL区切り: 利用者向け出力・成果物文書に URL を含める場合は、markdown リンク `[表示名](URL)` または `<URL>` を優先し、裸 URL を書くときは前後を空白・改行で区切り、直後に句読点・助詞・装飾記号（`**` 強調や全角括弧等）を直接続けない（AI間の内部報告は対象外）。
+EOF
+  done
+
+  cat > "$dir/commands/show-org.md" <<'EOF'
+---
+description: URL区切り規約行テスト用（フィクスチャ）。
+---
+
+- URL区切り: 利用者向け出力・成果物文書に URL を含める場合は、markdown リンク `[表示名](URL)` または `<URL>` を優先し、裸 URL を書くときは前後を空白・改行で区切り、直後に句読点・助詞・装飾記号（`**` 強調や全角括弧等）を直接続けない（AI間の内部報告は対象外）。
+EOF
+
+  run_validate "$dir"
+  local ok=0
+  assert_not_contains 'guideline-url-delimiter-missing' "残り11ファイルとも文言ありでguideline-url-delimiter-missingは出ない" || ok=1
+  return $ok
+}
+
+test_guideline_url_delimiter_missing_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 残る11ファイルとも文言を欠落させたケース。11件ともERROR検知され、
+  # 対象ファイルパスがそれぞれメッセージに含まれること。
+  for name in audit-assets draft-docs help init optimize-assets plan report review routine show-org standup; do
+    cat > "$dir/commands/${name}.md" <<'EOF'
+---
+description: URL区切り規約行欠落テスト用（フィクスチャ）。
+---
+
+## 作業方針
+1. ダミー手順（URL区切り規約行を含まない）。
+EOF
+  done
+
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "残り11ファイルとも欠落はexit 1" || ok=1
+  assert_contains 'guideline-url-delimiter-missing' "guideline-url-delimiter-missingカテゴリで検知" || ok=1
+  for name in audit-assets draft-docs help init optimize-assets plan report review routine show-org standup; do
+    assert_contains "commands/${name}.md" "commands/${name}.mdの欠落が出力に含まれる" || ok=1
+  done
+  assert_line_count 'URL区切り規約行（正典。2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応）が見つかりません' 11 \
+    "11ファイル分11件のERRORが出る" || ok=1
+  return $ok
+}
+
 # ---- エージェント数量表記の検証射程拡張（scripts/validate.sh セクション10） -----
 #
 # (a) .claude-plugin/marketplace.json・plugin.json description の数値混入検知。
@@ -2667,6 +2749,9 @@ run_test test_fork_skill_call_leader_exempt
 run_test test_fork_skill_call_non_leader_repo_map_detected
 run_test test_fork_skill_call_non_leader_conventions_detected
 run_test test_fork_skill_call_both_tokens_multiple_hits
+run_test test_guideline_url_delimiter_absent_files_skipped
+run_test test_guideline_url_delimiter_present_not_detected
+run_test test_guideline_url_delimiter_missing_detected
 run_test test_plugin_desc_agent_count_absent_files_skipped
 run_test test_plugin_desc_agent_count_marketplace_reintroduced
 run_test test_plugin_desc_agent_count_plugin_json_reintroduced

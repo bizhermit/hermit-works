@@ -211,6 +211,44 @@ FORK_SKILL_CALL_TOKENS=(
   'hw:conventions'
 )
 
+# URL区切り規約行（正典: .hw/plans/2026-08-04-url-rule-commands-enforcement.md T2。統括が
+# PR報告で URL を `**` 強調＋全角括弧で挟みリンク不能にした事象〔2026-08-04利用者指摘〕への
+# 再発防止）。正本は agents/mgmt-coordinator.md「出力」節の URL 区切り規約（docs系4体にも
+# 同旨3行ブロックで既存展開済み・本件のスコープ外）だが、/hw:request 等コマンド経由の
+# メイン会話実行ではペルソナ宣言だけでは mgmt-coordinator.md の規範がコンテキストに載らない
+# （T1原因分析）ため、commands/*.md 全12ファイルへ自己完結の1行として再掲し、本定数で
+# 機械検証する（CONTRIBUTING 1.4 原則4「検知手段のない規範は追加しない」対応）。
+#
+# 設計判断（GUIDELINE_COMMON_LINES 等と同じ理由で本ライブラリの定数として保持する）:
+# commands は長単一行が慣習のため、docs系4体の3行ブロックとは別に1行形で用意する
+# （文言は同旨・語彙一致。T1確定文言、挿入行md5=bda59cc6758cd64e3fdafca78d0effcb）。
+# 前後の記号（リストマーカー・字下げ）は含まない文そのものとし、ファイル内容にこの文字列が
+# 部分文字列として含まれるかのみを見る（行位置・前後文脈に依存しない存在検証。
+# GUIDELINE_INJECTION_NOTE_LINE と同方式。commands/show-org.md は箇条書きの字下げなし、
+# 他11ファイルは字下げありと文脈が異なるため、記号・字下げを含めない設計が必須）。
+GUIDELINE_URL_DELIMITER_LINE='URL区切り: 利用者向け出力・成果物文書に URL を含める場合は、markdown リンク `[表示名](URL)` または `<URL>` を優先し、裸 URL を書くときは前後を空白・改行で区切り、直後に句読点・助詞・装飾記号（`**` 強調や全角括弧等）を直接続けない（AI間の内部報告は対象外）。'
+
+# セクション9(j)の検証対象12ファイル（REPO_ROOTからの相対パス固定。commands/*.md 全件。
+# 設計仕様（本体案件 2026-08-04-url-rule-commands-enforcement.md）: 利用者向け出力を持つ
+# commands は全件が該当する（注入耐性文言の「固定5ファイル限定」〔利用者資材を読む手順の
+# 有無で絞り込み〕とは根拠が異なり絞り込まない）。COMMANDS_SKILLS_INJECTION_FILES 等と同じ
+# 理由でリスト方式を踏襲する。commands 追加時はこのリストへの追加を要する
+# （CONTRIBUTING 1.4 原則4の再評価条件と同様、新規 commands 追加時に見直す）。
+COMMANDS_URL_DELIMITER_FILES=(
+  'commands/audit-assets.md'
+  'commands/draft-docs.md'
+  'commands/help.md'
+  'commands/init.md'
+  'commands/optimize-assets.md'
+  'commands/plan.md'
+  'commands/report.md'
+  'commands/request.md'
+  'commands/review.md'
+  'commands/routine.md'
+  'commands/show-org.md'
+  'commands/standup.md'
+)
+
 # エージェントのリーダー判定（ファイル名 = frontmatter `name` 基準。mgmt-coordinator または
 # 末尾 `-lead` はリーダー）。scripts/validate.sh（TK-7・TK-2/E-1の対象判定、セクション9(b)(c)）と
 # scripts/sync-guidelines.sh（AGENTS_NON_LEADER 等、対象ファイルへの分配）が共有する判定ロジック

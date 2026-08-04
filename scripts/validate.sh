@@ -88,6 +88,13 @@
 #          *-lead）は運用規範上呼び出しが許容されるため対象外。commands/・skills/ 本文は
 #          これらのスキルを実際に呼び出す定型手順を持つため（正当な呼び出し）検査対象に
 #          含めない）。
+#      (j) commands/*.md 固定12ファイル（COMMANDS_URL_DELIMITER_FILES）に、URL区切り規約行
+#          （正典: scripts/lib/guidelines.sh の GUIDELINE_URL_DELIMITER_LINE 定数。
+#          2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応。統括が
+#          PR報告で URL を `**` 強調＋全角括弧で挟みリンク不能にした事象への再発防止）が
+#          逐語存在するかを検証する（欠落はERROR。(d)(f)(g)(h)と同様、前後文脈・行位置に
+#          依存しない存在検証で、対象ファイルが存在しない検証対象ディレクトリでは静かに
+#          スキップする）。
 #   10. エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1。従来の数量チェック
 #       [5] が README.md のみを対象とし、.claude-plugin/*.json・DESIGN.md・
 #       DEVELOPMENT.md が死角になっていた是正）
@@ -1183,6 +1190,26 @@ for rel_path in "${PERMISSION_TRIGGER_LINE_FILES[@]}"; do
   fi
 done
 
+# --- (j) commands/*.md 固定12ファイルのURL区切り規約行（2026-08-04案件「URL 区切り規約の
+#     commands 展開＋機械検証化」T2対応） -----------------------------------------
+# 対象は COMMANDS_URL_DELIMITER_FILES の固定12件（commands/*.md 全件）。(d)(f)(g)(h)と
+# 同じ理由（本チェック追加のためだけに無関係な既存フィクスチャ・テストを大量に更新せずに
+# 済ませる設計判断）で、対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする。
+GUIDELINE_URL_DELIMITER_MISSING_COUNT=0
+
+for rel_path in "${COMMANDS_URL_DELIMITER_FILES[@]}"; do
+  f="$REPO_ROOT/$rel_path"
+  [ -f "$f" ] || continue
+
+  file_content="$(cat "$f")"
+  file_content="${file_content//$'\r'/}"
+  if [[ "$file_content" != *"$GUIDELINE_URL_DELIMITER_LINE"* ]]; then
+    add_issue 'ERROR' 'guideline-url-delimiter-missing' "$rel_path" \
+      'URL区切り規約行（正典。2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応）が見つかりません（欠落・改変の可能性があります。行位置・前後文脈は問わない存在検証）'
+    GUIDELINE_URL_DELIMITER_MISSING_COUNT=$((GUIDELINE_URL_DELIMITER_MISSING_COUNT + 1))
+  fi
+done
+
 # ---------------------------------------------------------------------------
 # 10) エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1）
 #
@@ -1427,7 +1454,7 @@ echo "対象件数: agents=$agent_total / commands=$command_total / skills=$skil
 echo "README突合: エージェント README=$AGENT_README_COUNT/実体=$AGENT_FILE_COUNT  コマンド README=$CMD_README_COUNT/実体=$CMD_FILE_COUNT  スキル README=$SKILL_README_COUNT/実体=$SKILL_FILE_COUNT"
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
-echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件 / 非リーダーfork スキル呼び出し検出=${FORK_SKILL_CALL_HITS}件"
+echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件 / 非リーダーfork スキル呼び出し検出=${FORK_SKILL_CALL_HITS}件 / commands URL区切り規約行欠落=${GUIDELINE_URL_DELIMITER_MISSING_COUNT}件"
 echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
 echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
 echo ''

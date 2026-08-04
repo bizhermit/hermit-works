@@ -7,7 +7,7 @@
 #   正典＝scripts/lib/guidelines.sh／検証＝scripts/validate.sh／伝播＝本スクリプトの3分掌。
 #   本スクリプトは lib の「現在の値」と「git HEAD時点でコミットされている値」を比較し、
 #   差分がある定数だけを対象ファイルへ反映する。対象ファイルへの分配は scripts/validate.sh の
-#   検証分配（セクション9(a)(c)(e)(d)(f)(g)(h)）と同一にする。
+#   検証分配（セクション9(a)(c)(e)(d)(f)(g)(h)(j)）と同一にする。
 #
 # 採用方式（推奨方式どおり。担当判断での調整なし）:
 #   旧文言は `git show HEAD:scripts/lib/guidelines.sh` を一時ファイル化して source した値から
@@ -255,7 +255,7 @@ sync_item() {
   done
 }
 
-# 対象分配は scripts/validate.sh セクション9(a)(c)(e)(d)(f)(g)(h)と同一。
+# 対象分配は scripts/validate.sh セクション9(a)(c)(e)(d)(f)(g)(h)(j)と同一。
 sync_item '共通ガードレール6短文＋アンカー（9a）' \
   OLD_GUIDELINE_ANCHOR_PLUS_BLOCK GUIDELINE_ANCHOR_PLUS_BLOCK \
   "${AGENTS_ALL[@]+"${AGENTS_ALL[@]}"}"
@@ -287,6 +287,10 @@ sync_item 'import-assets非信頼入力宣言（9g）' \
 sync_item 'permission-rulesトリガー行（9h）' \
   OLD_GUIDELINE_PERMISSION_TRIGGER_LINE GUIDELINE_PERMISSION_TRIGGER_LINE \
   "${PERMISSION_TRIGGER_LINE_FILES[@]+"${PERMISSION_TRIGGER_LINE_FILES[@]}"}"
+
+sync_item 'URL区切り規約行（9j）' \
+  OLD_GUIDELINE_URL_DELIMITER_LINE GUIDELINE_URL_DELIMITER_LINE \
+  "${COMMANDS_URL_DELIMITER_FILES[@]+"${COMMANDS_URL_DELIMITER_FILES[@]}"}"
 
 # ---------------------------------------------------------------------------
 # 結果サマリ
