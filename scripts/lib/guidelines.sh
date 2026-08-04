@@ -79,14 +79,14 @@ GUIDELINE_ANCHOR_PLUS_BLOCK="${GUIDELINE_ANCHOR_LINE}"$'\n'"${GUIDELINE_COMMON_B
 GUIDELINE_TK2_E1_LINE='- 『連携』に記載した**変更を伴う**依頼は、原則として自ら起動せず、完了報告の「引き継ぎ事項」に記載して呼び出し元の判断に委ねる。ただし次は自ら起動してよい: (a) 自グループの `*-lead` が自グループ内の担当へ委任する場合、(b) 作業設計5原則-5の評価ループおよび三役審議のための評価者・視点役の起動（グループ外を含む）、(c) 読み取り専用の調査補助。'
 
 # 注入耐性文言（P-4a/P-4b対応。sec-lead方針: .hw/plans/artifacts/2026-07-29-sec-lead-triage.md
-# 「即時修正 P-4a」節）。利用者資材を直接読む commands/skills 固定4ファイルの、当該手順の
+# 「即時修正 P-4a」節）。利用者資材を直接読む commands/skills 固定5ファイルの、当該手順の
 # 直前・直後に挿入される短文で、セクション9(d)で存在検証する。
 #
 # 設計判断（GUIDELINE_COMMON_LINES/GUIDELINE_TK2_E1_LINE と同じ理由で本ライブラリの定数として
-# 保持する）: 挿入先4ファイルでは、リスト項目（'- '始まり）・字下げのみ（先頭3スペース）等
-# 挿入位置の文脈が異なる（skills/conventions/SKILL.md は`## 注意`節の箇条書きの1項目、
-# commands/optimize-assets.md・commands/audit-assets.md・commands/draft-docs.md は手順内の
-# 独立段落）。よって本定数は
+# 保持する）: 挿入先5ファイルでは、リスト項目（'- '始まり）・字下げのみ（先頭3スペース）等
+# 挿入位置の文脈が異なる（skills/conventions/SKILL.md・skills/repo-map/SKILL.md は`## 注意`節の
+# 箇条書きの1項目、commands/optimize-assets.md・commands/audit-assets.md・commands/draft-docs.md
+# は手順内の独立段落。2026-08-03案件issue28-T2でskills/repo-map/SKILL.mdを追加）。よって本定数は
 # 前後の記号（リストマーカー・字下げ）を含まない文そのものとし、ファイル内容にこの文字列が
 # 部分文字列として含まれるかのみを見る（行位置・前後文脈に依存しない存在検証。案件計画注記
 # 「T8でaudit-assets.mdは独立段落化済み」を踏まえた設計）。
@@ -111,6 +111,7 @@ GUIDELINE_DECISION_PROCEDURE_LINE='- 規約・命名・表記等の慣習的な�
 # commands/draft-docs.md はこの条件により2026-07-30案件（docgen-command）で追加。
 COMMANDS_SKILLS_INJECTION_FILES=(
   'skills/conventions/SKILL.md'
+  'skills/repo-map/SKILL.md'
   'commands/optimize-assets.md'
   'commands/audit-assets.md'
   'commands/draft-docs.md'
@@ -188,6 +189,26 @@ PERMISSION_TRIGGER_LINE_FILES=(
   'agents/sec-audit.md'
   'agents/sec-appsec.md'
   'agents/infra-devops.md'
+)
+
+# context: fork スキル呼び出しトークン（CONTRIBUTING 4.2 運用規範「fork スキル（hw:repo-map・
+# hw:conventions）はメイン会話・リーダー層から呼ぶ」対応。2026-08-03案件issue28
+# sec-audit差し戻し M-s3: この運用規範が無検知のままだと CONTRIBUTING 1.4 原則4
+# 「検知手段のない規範は追加しない」と不整合になるため、静的部分検知（非リーダー
+# agents/*.md 本文にこれらのスキル呼び出しトークンが含まれていないか）を
+# scripts/validate.sh セクション9(i)へ追加する。本定数はその正典）。
+#
+# 設計判断（GUIDELINE_COMMON_LINES 等と同じ理由で本ライブラリの定数として保持する）:
+# トークンは `hw:` 接頭辞付きの完全表記のみとする。commands/*.md・skills/*/SKILL.md での
+# 実際の呼び出し表記（例: commands/init.md「hw:repo-map スキルの手順で」）はすべて
+# この接頭辞付き表記のため、この狭い定義で検知目的を満たす。接頭辞なしの一般名詞的言及
+# （例: skills/add-service/SKILL.md「repo-map スキル」）は対象外の commands/・skills/ 側の
+# 表記であり、かつ「repo-map」単独は一般名詞との誤検知区別が難しいため、本定数には含めない
+# （検査対象自体が非リーダー agents/*.md 限定であり、commands/・skills/ は対象外のため
+# 実害もない）。
+FORK_SKILL_CALL_TOKENS=(
+  'hw:repo-map'
+  'hw:conventions'
 )
 
 # エージェントのリーダー判定（ファイル名 = frontmatter `name` 基準。mgmt-coordinator または
