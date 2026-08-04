@@ -1,6 +1,6 @@
 ---
 name: permission-rules
-description: Claude Code の Bash パターンマッチング・permissions 運用ガイダンス。deny ルール提案時の詳細規則・確認手順・多層防御考慮を提供する。Claude Code の権限設定（`.claude/settings.json` 等の `permissions`）を提案・変更・レビューするときに使う。
+description: Claude Code の Bash パターンマッチング・permissions・sandbox 設定の運用ガイダンス。deny ルール提案時の詳細規則・確認手順・多層防御考慮を提供する。Claude Code の権限設定（`.claude/settings.json` 等の `permissions`）や sandbox 設定を提案・変更・レビューするときに使う。
 ---
 
 # Claude Code permissions パターン運用ガイダンス
@@ -48,13 +48,39 @@ Bash パターンマッチングの仕様と、deny ルール提案時に踏む�
 
    上記いずれにも当たらない未検証の亜種（例: 末尾が `*` を伴わずスペースのみで終わる
    `Bash(git push --force )`）は、動作が未確認のため提案しない。
+6. **（本規則のみ出典区分が異なる: 公式ドキュメント確認のみ・実機未検証。「注意」節参照）**
+   sandbox 設定（`sandbox.filesystem`/`sandbox.network` 等）は permissions とは効く層が異なる
+   制約であり、OS レベルのサンドボックス境界で強制される。Claude Code が判定するコマンド文字列
+   だけでなく、kubectl・terraform・npm 等その配下で起動される**すべてのサブプロセス**に適用される
+   ため、規則5で挙げたような Bash パターンのすり抜け（コマンド前半の差異等）の影響を受けない。
+   一方で OS 依存の機構（bwrap 等）に依存するため、依存ツールが環境に無い場合は sandbox 自体が
+   無効化され、制約なしの実行に戻る（フェイルオープン）。この特性上、permissions・hooks 等の
+   既存の制約を代替・降格する根拠にはせず、その上に重ねる加算の選択肢としてのみ提案する。
+   - `sandbox.network.allowedDomains` / `deniedDomains`: 許可・拒否ドメインを指定する。両方に
+     一致する場合は `deniedDomains` が優先される。後述の設定ソース制限は `strictAllowlist`・
+     `filesystem.disabled` に固有のもので、`deniedDomains` は全設定ソースからマージされると
+     公式ドキュメントに明記されている（`allowedDomains` にはソース制限の記載がない）。
+   - `sandbox.network.strictAllowlist`（v2.1.219 で追加）: 許可リスト（`allowedDomains` 等）外の
+     ホストへのアクセスを、承認プロンプトを出さずに拒否する設定である。sandbox 内で実行される
+     コマンドのみを対象とし、WebFetch 等の Claude Code インプロセスで実行されるツールには
+     適用されない。加えて user settings・managed settings・CLI `--settings` からのみ有効であり、
+     `.claude/settings.json`・`.claude/settings.local.json`（プロジェクト設定）に書いても効かない。
+     プロジェクト設定に書いて「設定したつもり」になる事故に注意し、提案時は必ず有効な設定ソースを
+     明示する。
+   - `sandbox.filesystem.disabled`（v2.1.216 で追加）: filesystem の隔離のみを解除する
+     （network 隔離は維持される）緩和方向の設定であり、本ガイダンスでは**提案しない**。利用者
+     環境で既に有効になっていないかの確認対象としてのみ扱う。
 
 ## 注意
 
-- 上記の規則は公式ドキュメントの確認とローカル実機検証（ヘッドレス `claude -p` 実行）の両方が
-  一致した事実に基づく。規則に明記されていないパターンの挙動を推測で断定しない。未確認の挙動が
-  提案に必要な場合は、その旨を明記したうえで実機検証を提案するか、確実性より阻止力を優先する
-  代替（hooks 等の他レイヤー）を案内する。
+- 規則1〜5（Bash パターンマッチング・permissions の仕様）は公式ドキュメントの確認とローカル
+  実機検証（ヘッドレス `claude -p` 実行）の両方が一致した事実に基づく。規則に明記されていない
+  パターンの挙動を推測で断定しない。未確認の挙動が提案に必要な場合は、その旨を明記したうえで
+  実機検証を提案するか、確実性より阻止力を優先する代替（hooks・sandbox 設定等の他レイヤー）を
+  案内する。
+- 規則6（sandbox 設定）は公式ドキュメントの確認のみに基づき、ローカルでの実機検証は行っていない
+  （検証環境を用意できなかったため）。挙動を公式ドキュメントの記載を超えて断定せず、確実性が
+  必要な場面では利用者側での事前確認を促す。
 - 引数を制約する Bash パターンによる deny は回避されうる（規則5）。確実な阻止が求められる場面
-  （リリース保護等）では、Bash パターンのみに頼らず hooks・ツール単位の deny（例:
-  `WebFetch(domain:…)` への寄せ）等の多層防御を提案に含める。
+  （リリース保護等）では、Bash パターンのみに頼らず hooks・sandbox 設定（規則6）・ツール単位の
+  deny（例: `WebFetch(domain:…)` への寄せ）等の多層防御を提案に含める。
