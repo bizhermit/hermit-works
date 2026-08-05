@@ -858,7 +858,9 @@ background: false
    （qa-test整備）を、`scripts/aggregate-agent-token-usage.sh` を変更した場合は
    `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`（qa-test整備）を、
    `scripts/sync-guidelines.sh` を変更した場合は `bash scripts/tests/run-sync-guidelines-tests.sh`
-   （infra-devops整備）を実行し、全ケースPASSであることを確認してください。回帰テストが共有する
+   （infra-devops整備）を、`scripts/close-linked-issues.sh` を変更した場合は
+   `bash scripts/tests/run-close-linked-issues-tests.sh`（infra-devops整備）を実行し、
+   全ケースPASSであることを確認してください。回帰テストが共有する
    共通ライブラリ（`scripts/tests/lib/` 配下）を変更した場合は、影響が lib/ を共有する全ハーネスに
    及ぶため、以下の全ハーネスを実行し、全ケースPASSであることを確認してください（新たなハーネスを
    追加した場合は、本リストと8.4の該当箇所を同時に更新してください）。
@@ -867,6 +869,7 @@ background: false
    - `bash scripts/tests/run-git-changelog-tests.sh`
    - `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`
    - `bash scripts/tests/run-sync-guidelines-tests.sh`
+   - `bash scripts/tests/run-close-linked-issues-tests.sh`
 
    回帰テストを新設すべきかの判断基準と配置は8.4を参照してください。
 
@@ -1084,6 +1087,23 @@ CI 定義は以下の方針に従います。
 - `develop` 向け PR のマージ時には、`.github/workflows/delete-merged-branch.yml` がリモートの
   作業ブランチを自動削除します（対象は `develop` を base とするマージ済み PR の head ブランチ
   のみ。main・develop 自体と fork のブランチは削除しません）。
+- **issue のクローズは自動では行われません。** GitHub の closing キーワード（`Closes #<n>` 等）は
+  PR が既定ブランチ（`main`）を対象とする場合にのみ解釈され、`develop` 向け PR では無視されて
+  リンクも作成されないためです（GitHub 公式ドキュメント「Linking a pull request to an issue」。
+  この仕様のため CI による自動クローズも成立しません。判断記録は `.hw/decisions.md` 2026-08-05 行）。
+  案件完了時は `bash scripts/close-linked-issues.sh <PR番号>` で対象を確認し、
+  `--apply` を付けて実行してクローズします（既定は dry-run。`--apply` は実行前に y/N 確認を求め、
+  **AI エージェントの実行を含む非対話環境では `--yes` の併用が必須**です〔未指定なら何も操作せず
+  中止します〕。`--yes` はプロンプトに応答できない実行環境のための指定であり、**利用者の承認を
+  代替するものではありません**。issue のクローズは利用者に通知が飛ぶ外向きの操作であるため、
+  エージェントが `--apply` を実行してよいのは利用者の明示的な指示がある場合に限り、指示がない
+  ときは dry-run の結果（対象一覧）を提示して指示を仰いでください。マージ後は速やかに実行して
+  ください。PR 本文はマージ後も編集可能で、本スクリプトは実行時点の本文を評価するためです。
+  対象は本文に `Closes`/`Fixes`/`Resolves`
+  ＋ `#<番号>` を書いた同一リポジトリの未クローズ issue に限られ、コードブロック・引用・
+  インラインコード内の記述、他リポジトリ参照、PR 番号への参照は対象外です）。**issue の一部しか
+  対応しない PR では `Closes` ではなく `Refs #<n>` 等**（クローズを伴わない参照）を使ってください。
+  対応内容のサマリコメントは、スクリプトが投稿する定型コメントとは別に従来どおり投稿します。
 - マージ済みブランチの後始末には `bash scripts/git-cleanup-branch.sh [<起点ブランチ名>]` を
   使います。作業ブランチの起点は `develop` であるため、**引数省略時の既定は `develop`**
   です（`bash scripts/git-cleanup-branch.sh` のみで `develop` 起点の掃除ができます）。
@@ -1199,6 +1219,11 @@ CI 定義は以下の方針に従います。
       （または1コミットに整えたうえで）とし、件名が Conventional Commits に準拠している
 - [ ] 後発マージの場合、`develop` を取り込み（rebase 推奨）5章の検証を再実行してからマージした
 - [ ] `commands/show-org.md` の競合は手マージせず `scripts/generate-show-org.sh` で再生成した
+- [ ] PR 本文で issue を参照する場合、全対応なら `Closes #<n>`、部分対応なら `Refs #<n>` 等を
+      使い分けた（9.1参照）
+- [ ] 案件完了時に `bash scripts/close-linked-issues.sh <PR番号>` で対象を確認し、
+      `--apply`（非対話環境では `--apply --yes`）でクローズした（自動クローズは GitHub 仕様上
+      働きません。マージ後は速やかに実行します。9.1参照）
 - [ ] マージ済みブランチは `bash scripts/git-cleanup-branch.sh`（既定 `develop`。VSCode タスクからも可）で後始末した
 - [ ] version・CHANGELOG の更新は作業ブランチと分離し、`release/v<version>` ブランチ上でリリース
       準備コミットとして一括実施し、`develop` 向け PR（リリース準備 PR）で統合した

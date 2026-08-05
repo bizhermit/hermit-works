@@ -27,6 +27,10 @@ name: validate
 #   6. bash scripts/tests/run-sync-guidelines-tests.sh : scripts/sync-guidelines.sh の
 #      回帰テスト（存在する場合のみ実行。上記4・5と同様、スクリプト自体が削除された
 #      場合でもジョブを失敗させず、スキップした旨のみ記録する）。
+#   7. bash scripts/tests/run-close-linked-issues-tests.sh : scripts/close-linked-issues.sh の
+#      回帰テスト（存在する場合のみ実行。上記4〜6と同様、スクリプト自体が削除された
+#      場合でもジョブを失敗させず、スキップした旨のみ記録する）。同スクリプトは gh CLI を
+#      スタブ化して実行するため、CI でも GitHub API へのアクセス・認証は発生しない。
 #
 # 秘密情報・外部サービスへの依存: なし。使用する外部ネットワークアクセスは
 # actions/checkout と、Claude Code CLI ネイティブバイナリ本体（downloads.claude.ai/
@@ -155,4 +159,12 @@ jobs:
             bash scripts/tests/run-sync-guidelines-tests.sh
           else
             echo "scripts/tests/run-sync-guidelines-tests.sh が見つからないためスキップします"
+          fi
+
+      - name: "回帰テスト（scripts/close-linked-issues.sh 用: scripts/tests/run-close-linked-issues-tests.sh）"
+        run: |
+          if [ -f scripts/tests/run-close-linked-issues-tests.sh ]; then
+            bash scripts/tests/run-close-linked-issues-tests.sh
+          else
+            echo "scripts/tests/run-close-linked-issues-tests.sh が見つからないためスキップします"
           fi
