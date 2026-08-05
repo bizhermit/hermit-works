@@ -1,6 +1,6 @@
 ---
 name: permission-rules
-description: Claude Code の Bash パターンマッチング・ファイルパス glob（Edit()/Read() のパスルール、Write() 等にも及ぶ hooks の `if:` 条件）・permissions・sandbox 設定の運用ガイダンス。deny ルール提案時の詳細規則・確認手順・多層防御考慮を提供する。Claude Code の権限設定（`.claude/settings.json` 等の `permissions`）や sandbox 設定、hooks の `if:` 条件を提案・変更・レビューするときに使う。
+description: Claude Code の Bash パターンマッチング・ファイルパス glob（Edit()/Read() のパスルール、Write() 等にも及ぶ hooks の `if:` 条件）・permissions・sandbox 設定（`sandbox.credentials`/`credentials` 等の認証情報保護を含む）の運用ガイダンス。deny ルール提案時の詳細規則・確認手順・多層防御考慮を提供する。Claude Code の権限設定（`.claude/settings.json` 等の `permissions`）や sandbox 設定、認証情報・シークレットの保護設定、hooks の `if:` 条件を提案・変更・レビューするときに使う。
 ---
 
 # Claude Code permissions パターン運用ガイダンス
@@ -42,19 +42,65 @@ Bash パターンマッチングの仕様、Edit()/Read() のパスルールと�
    無効化され、制約なしの実行に戻る（フェイルオープン）。この特性上、permissions・hooks 等の
    既存の制約を代替・降格する根拠にはせず、その上に重ねる加算の選択肢としてのみ提案する。
    - `sandbox.network.allowedDomains` / `deniedDomains`: 許可・拒否ドメインを指定する。両方に
-     一致する場合は `deniedDomains` が優先される。後述の設定ソース制限は `strictAllowlist`・
-     `filesystem.disabled` に固有のもので、`deniedDomains` は全設定ソースからマージされると
-     公式ドキュメントに明記されている（`allowedDomains` にはソース制限の記載がない）。
+     一致する場合は `deniedDomains` が優先される。`deniedDomains` は全設定ソースからマージされる
+     と公式ドキュメントに明記されている（`allowedDomains` にはソース制限の記載がない）。他の
+     設定ソース限定は後述「設定したつもり事故」参照。
    - `sandbox.network.strictAllowlist`（v2.1.219 で追加）: 許可リスト（`allowedDomains` 等）外の
      ホストへのアクセスを、承認プロンプトを出さずに拒否する設定である。sandbox 内で実行される
      コマンドのみを対象とし、WebFetch 等の Claude Code インプロセスで実行されるツールには
-     適用されない。加えて user settings・managed settings・CLI `--settings` からのみ有効であり、
-     `.claude/settings.json`・`.claude/settings.local.json`（プロジェクト設定）に書いても効かない。
-     プロジェクト設定に書いて「設定したつもり」になる事故に注意し、提案時は必ず有効な設定ソースを
-     明示する。
+     適用されない。有効な設定ソースの制限は後述「設定したつもり事故」参照。
+   - `sandbox.credentials`（`sandbox.credentials.files[]`＝`path`+`mode`、
+     `sandbox.credentials.envVars[]`＝`name`+`mode`。配列は全設定ソースから
+     マージされる）: 共通ガードレール（認証情報の値を転記しない）を機械層で裏打ちする手段として
+     提案できる。`mode: "deny"`
+     （v2.1.187 以降）を提案の主軸とし、files はサンドボックス内からの読み取りをブロック
+     （`filesystem.denyRead` と同じ効果。この効果は `filesystem.disabled` 下では失われる。後述
+     「設定したつもり事故」参照）、envVars はサンドボックス実行コマンドの環境から変数を
+     除去する。`mode: "mask"` は認証を通したまま値を隠す選択肢だが、`network.tlsTerminate`
+     （実験的機能）が必須・必要バージョンが envVars（v2.1.199 以降）と files（v2.1.221 以降）で
+     異なる・有効な設定ソースが限定される・プラットフォーム差があるなど前提が多く、運用の詳細は
+     公式ドキュメントを参照する（要点は後述「設定したつもり事故」参照）。対象範囲はサンドボックス
+     実行の Bash コマンドのみで、組み込みの拒否リストは無く列挙した対象のみが保護される。
+     `credentials.allowPlaintextInject`（v2.1.199 以降、既定 false）は平文 HTTP へのマスク差し
+     替えも許可する緩和方向の設定であり、`filesystem.disabled` と同様に本ガイダンスでは
+     **提案しない**。利用者環境で既に有効になっていないかの確認対象としてのみ扱う。
    - `sandbox.filesystem.disabled`（v2.1.216 で追加）: filesystem の隔離のみを解除する
      （network 隔離は維持される）緩和方向の設定であり、本ガイダンスでは**提案しない**。利用者
-     環境で既に有効になっていないかの確認対象としてのみ扱う。
+     環境で既に有効になっていないかの確認対象としてのみ扱う。有効な設定ソースの制限は後述
+     「設定したつもり事故」参照。
+   - **「設定したつもり事故」**（無言のまま保護が外れる類型。提案時は有効な設定ソース・対象
+     バージョン・プラットフォーム・`injectHosts`（`mask` エントリで実値注入を許可する宛先ホスト）
+     の有無を必ず添える）:
+     - **`filesystem.disabled` 併用時の deny 無効化**（最重要）: `filesystem.disabled` 下では
+       `filesystem.denyRead` と `credentials.files` の `deny` 読み取りブロックは無効化される
+       （filesystem 層に両方が依存するため）。一方 `credentials.envVars` の `deny`/`mask` と
+       `credentials.files` の `mask`（実質的に `deny` として扱われるエントリ＝自動フォールバック分・
+       検証時の降格分を除く）は filesystem 層と独立に効く。規則6 は `deny` を提案の主軸に据えるため、`filesystem.disabled` との併用
+       提案では files の deny 保護が効かなくなる点を必ず確認する。緩和条件: managed settings が
+       `sandbox.filesystem` を設定するか `sandbox.credentials.files` の `deny` エントリを持つ
+       場合、`filesystem.disabled` は managed settings からのみ設定可能になる。
+     - 設定ソース限定: `strictAllowlist`・`filesystem.disabled`・`credentials` の `mask`
+       エントリ・`network.tlsTerminate`・`credentials.allowPlaintextInject` は
+       user / managed settings・CLI `--settings` からのみ有効で、`.claude/settings.json`・
+       `.claude/settings.local.json`（プロジェクト設定）に書いても効かない（`deny` エントリに
+       この制限の記載はない）。
+     - 版依存: `mask` の必要バージョンは envVars（v2.1.199 以降）と files（v2.1.221 以降）で
+       異なる。不正エントリの扱い（公式ドキュメントの「Invalid entries in managed settings」節）
+       も版で変わる: v2.1.191〜v2.1.220 は不正エントリを一律で除去、v2.1.221 以降は `path`/`name`
+       が有効な不正エントリのみ `mode: "deny"` へ降格し、`mode` 不明・`path`/`name` 不正のものは
+       除去する。除去された場合は保護がまったく効かなくなるため、マスクを設定したつもりで
+       無防備になりうる。なおこの寛容な解析は managed settings 限定で、user・project・local
+       設定では妥当性検証に失敗したファイルが丸ごと拒否される（無言型ではなく報告はされる）。
+     - プラットフォーム差: macOS では files の `mask` は実効ではなく読み取り不可にフォール
+       バックする（実値への差し替えは行われない）。
+     - `injectHosts` 未指定の既定: 指定を省略すると `network.allowedDomains` の全ホスト宛
+       リクエストに実値が注入される（既定が危険側）。`mode: "deny"` エントリでは受理されるが
+       無視される。
+     - `onExtractNoMatch` の既定 `warn`（`mode: "mask"` かつ `extract` 設定時のみ該当）: 正規
+       表現が一致しないとエントリがスキップされ、サンドボックス内から実ファイルが素で読める
+       （マスクされない）。
+     - `mask` の deny フォールバック: ディレクトリ・glob パターン・8MiB 超・非 UTF-8 な対象は
+       `deny` へ自動フォールバックする（マスク前提の運用が静かに崩れる）。
 7. ファイルパス系ツールルールのパス glob と hooks の `if:` 条件は、規則1の Bash パターン前方一致とは
    意味論が異なる（確認日 2026-08-04、対象バージョン v2.1.220）。
    - **パターン文法**: `*` は1パスセグメント、`**` は複数セグメントに一致し、末尾 `/**` はそのディレ
@@ -119,7 +165,7 @@ Bash パターンマッチングの仕様、Edit()/Read() のパスルールと�
   PostToolUse 等の他ツール・他フックイベントでの挙動は公式ドキュメントの記載に基づく推定であり、
   実機検証はしていない。規則7内の `Glob(path)` に関する記載（`Read(path)` の deny で代替する旨）も
   公式ドキュメントの記載のみに基づき、実機検証はしていない（規則7本文に明記済み）。
-- 規則6（sandbox 設定）は公式ドキュメントの確認のみに基づき、ローカルでの実機検証は行っていない
+- 規則6（sandbox 設定・credentials 設定を含む）は公式ドキュメントの確認のみに基づき、ローカルでの実機検証は行っていない
   （検証環境を用意できなかったため）。挙動を公式ドキュメントの記載を超えて断定せず、確実性が
   必要な場面では利用者側での事前確認を促す。
 - 引数を制約する Bash パターンによる deny は回避されうる（規則5）。確実な阻止が求められる場面
