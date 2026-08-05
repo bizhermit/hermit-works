@@ -45,8 +45,9 @@
 #      (c) 非リーダー全件の本文に TK-2/E-1統合文（正典⑤節。連携節の実行主体明文化。
 #          `## 連携` 節冒頭に挿入される1行）が逐語存在するかを検証する（欠落はERROR。
 #          リーダーは対象外＝委任行為自体が業務のため）。
-#      (d) 利用者資材を直接読む commands/skills 固定4ファイル（skills/conventions/SKILL.md・
-#          commands/optimize-assets.md・commands/audit-assets.md・commands/draft-docs.md）に、
+#      (d) 利用者資材を直接読む commands/skills 固定5ファイル（skills/conventions/SKILL.md・
+#          skills/repo-map/SKILL.md・commands/optimize-assets.md・commands/audit-assets.md・
+#          commands/draft-docs.md）に、
 #          注入耐性文言（正典: scripts/lib/guidelines.sh の GUIDELINE_INJECTION_NOTE_LINE 定数。P-4a/P-4b
 #          対応）が逐語存在するかを検証する（欠落はERROR。前後文脈・行位置には依存しない
 #          存在検証）。対象ファイルが存在しない検証対象ディレクトリ（テストフィクスチャ等）は
@@ -78,6 +79,22 @@
 #          原則4「検知手段のない規範は追加しない」対応）が逐語存在するかを検証する
 #          （欠落はERROR。(d)(f)(g)と同様、前後文脈・行位置に依存しない存在検証で、
 #          対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする）。
+#      (i) 非リーダー（is_leader_agent_name が偽）の agents/*.md 本文に、context: fork
+#          スキル呼び出しトークン（正典: scripts/lib/guidelines.sh の FORK_SKILL_CALL_TOKENS
+#          定数＝`hw:repo-map`・`hw:conventions`。CONTRIBUTING 4.2 運用規範「fork スキルは
+#          メイン会話・リーダー層から呼ぶ」対応。2026-08-03案件issue28 sec-audit差し戻し
+#          M-s3・CONTRIBUTING 1.4 原則4「検知手段のない規範は追加しない」対応）が部分文字列
+#          として含まれていないかを検証する（検出はERROR。リーダー層（mgmt-coordinator・
+#          *-lead）は運用規範上呼び出しが許容されるため対象外。commands/・skills/ 本文は
+#          これらのスキルを実際に呼び出す定型手順を持つため（正当な呼び出し）検査対象に
+#          含めない）。
+#      (j) commands/*.md 固定12ファイル（COMMANDS_URL_DELIMITER_FILES）に、URL区切り規約行
+#          （正典: scripts/lib/guidelines.sh の GUIDELINE_URL_DELIMITER_LINE 定数。
+#          2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応。統括が
+#          PR報告で URL を `**` 強調＋全角括弧で挟みリンク不能にした事象への再発防止）が
+#          逐語存在するかを検証する（欠落はERROR。(d)(f)(g)(h)と同様、前後文脈・行位置に
+#          依存しない存在検証で、対象ファイルが存在しない検証対象ディレクトリでは静かに
+#          スキップする）。
 #   10. エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1。従来の数量チェック
 #       [5] が README.md のみを対象とし、.claude-plugin/*.json・DESIGN.md・
 #       DEVELOPMENT.md が死角になっていた是正）
@@ -97,6 +114,45 @@
 #       第1弾コミット時に 100644 の .sh がすり抜けた実害（WSL2 の core.fileMode 環境）
 #       への対処。REPO_ROOT が git 作業ツリーでない場合は判定根拠がないため静かに
 #       スキップする（エラーにはしない）。
+#   12. Markdown 文書中のリポジトリ内パス参照の実在検証（issue #34。文書間のパス相互
+#       参照が多く、リネーム・削除時に散文中の参照が「静かに嘘になる」死角への対処。
+#       セクション4のREADME一覧突合は表形式の一覧のみが対象で、通常の散文中の
+#       バッククォート付きパス参照は対象外だった）
+#       対象文書: README.md / CLAUDE.md / CONTRIBUTING.md / DESIGN.md /
+#       DEVELOPMENT.md / agents/*.md / commands/*.md / skills/*/SKILL.md。対象文書が
+#       存在しない検証対象ディレクトリ（テストフィクスチャ等）は、該当ファイルのみ
+#       静かにスキップし（セクション6・9(d)・10・11と同様）、対象文書が1件も
+#       存在しない場合は本セクション自体を静かにスキップする（エラーにはしない）。
+#       検出: バッククォートで囲まれた文字列を空白区切りの単語に分割し、先頭が
+#       agents/ commands/ skills/ scripts/ .github/ .claude-plugin/ .hw/ のいずれかで
+#       始まり、末尾が .md/.sh/.json/.yml/.yaml のいずれかで終わる単語を
+#       「リポジトリ内パス形トークン」として抽出する（実行例のような複数語の
+#       バッククォート内でも、パス部分のみを単語として正しく拾う）。不在はERROR。
+#       除外（4分類。件数は0件でも必ずサマリーへ出力する。セクション5と同思想）:
+#         (1) .hw/ 配下（利用者側生成パス）
+#         (2) `<` または `…` を含む（プレースホルダ）
+#         (3) `*` を含む（ワイルドカード。REPO_ROOT基準でglob展開し1件以上実在すれば
+#             PASS、0件はERROR）
+#         (4) 利用者側資材の例示パス明示除外リスト（現状 .github/copilot-instructions.md
+#             のみ。commands/optimize-assets.md・skills/conventions/SKILL.md が他AI
+#             ツール向け資材の例として挙げているだけで、本リポジトリ内には実在しない
+#             ことを承知のうえでの例示のため）
+#       対象文書全体（存在するファイルのみ）から抽出条件に一致するトークンが1件も
+#       取れなかった場合もERRORとする（検出パターンの変化等による検証の静かな空振り
+#       検知。セクション4のREADME抽出0件チェックと同思想）。
+#       トラバーサル拒否: 抽出後トークンが `..` を含む場合は、上記4分類の除外判定
+#       および実在確認（-f 判定・compgen -G によるワイルドカード展開）へ到達する前に
+#       短絡し、doc-path-ref-traversal カテゴリでERRORとする（差し戻し対応
+#       SEC-L1/qa-L3）。正当な文書内パス参照はリポジトリ直下からの相対パスのみを
+#       想定しており `..` が現れる余地はないため、この短絡はREPO_ROOT外パスの
+#       存在有無をファイルシステムへ探査させない安全側の設計。件数はサマリー行へ
+#       0件でも出力する（他4分類と同様）。
+#       既知の限界（現時点で顕在化なし。品質ゲート差し戻しでの指摘・記録事項）:
+#         - フェンス付きコードブロック（```で囲まれた範囲）内のバッククォート付き
+#           パス例示も区別せず抽出対象とする（qa-review M1）。将来コードブロック内の
+#           例示パスが誤検知になりうる。
+#         - バッククォートの対応は1行内で完結する前提で、複数行にまたがるバック
+#           クォートのスパンには対応しない（qa-review N3）。
 #
 # 採用理由（旧 scripts/validate.ps1 からの移行にあたって）:
 #   devcontainer（Linux）ベースの開発環境への移行に伴い、実行環境の前提を
@@ -956,7 +1012,7 @@ done
 # (c) 非リーダー全件の本文に TK-2/E-1統合文（GUIDELINE_TK2_E1_LINE。`## 連携` 節冒頭の
 #     実行主体明文化）が逐語存在するかを検証する。(a)と同様、frontmatterの妥当性とは
 #     無関係（本文側の検証のため）に判定する。リーダー判定は(b)と同様ファイル名基準。
-# (d) 利用者資材を直接読む commands/skills 固定4ファイル（COMMANDS_SKILLS_INJECTION_FILES）
+# (d) 利用者資材を直接読む commands/skills 固定5ファイル（COMMANDS_SKILLS_INJECTION_FILES）
 #     に、注入耐性文言（GUIDELINE_INJECTION_NOTE_LINE。P-4a/P-4b対応）が逐語存在するかを
 #     検証する。前後文脈・行位置には依存しない存在検証。対象ファイル不在時は静かに
 #     スキップする。
@@ -978,6 +1034,7 @@ GUIDELINE_MISSING_COUNT=0
 DISALLOWED_MISSING_COUNT=0
 GUIDELINE_TK2_E1_MISSING_COUNT=0
 GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT=0
+FORK_SKILL_CALL_HITS=0
 
 for f in "${AGENT_FILES[@]}"; do
   [ -f "$f" ] || continue
@@ -1026,6 +1083,16 @@ for f in "${AGENT_FILES[@]}"; do
     GUIDELINE_TK2_E1_MISSING_COUNT=$((GUIDELINE_TK2_E1_MISSING_COUNT + 1))
   fi
 
+  # --- (i) 非リーダーによる context: fork スキル呼び出し検出（CONTRIBUTING 4.2 運用規範。
+  #     2026-08-03案件issue28 sec-audit差し戻し M-s3対応。CONTRIBUTING 1.4 原則4対応） -----
+  for fork_skill_token in "${FORK_SKILL_CALL_TOKENS[@]}"; do
+    if [[ "$file_content" == *"$fork_skill_token"* ]]; then
+      add_issue 'ERROR' 'fork-skill-call-non-leader' "agents/$(basename "$f")" \
+        "非リーダーエージェント（name: '${agent_name}'）の本文に context: fork スキル呼び出しトークン '${fork_skill_token}' が見つかりました（CONTRIBUTING 4.2 運用規範により、fork スキル（hw:repo-map・hw:conventions）はメイン会話・リーダー層からのみ呼び出す）"
+      FORK_SKILL_CALL_HITS=$((FORK_SKILL_CALL_HITS + 1))
+    fi
+  done
+
   # --- (b) 非リーダーのdisallowedTools整合検証 --------------------------------
   if [ "$frontmatter_ok" -eq 0 ]; then
     continue
@@ -1067,7 +1134,7 @@ for f in "${AGENT_FILES[@]}"; do
 done
 
 # --- (d) 利用者資材を直接読む commands/skills の注入耐性文言（P-4a/P-4b） -------
-# 対象は COMMANDS_SKILLS_INJECTION_FILES の固定4件のみ（上記定義参照）。ファイルが
+# 対象は COMMANDS_SKILLS_INJECTION_FILES の固定5件のみ（上記定義参照）。ファイルが
 # 存在しない検証対象ディレクトリ（テストフィクスチャ等）では、セクション6・10(b)と
 # 同様にERRORにはせず静かにスキップする（本チェック追加のためだけに無関係な既存
 # フィクスチャ・テストを大量に更新せずに済むようにするための設計判断）。
@@ -1159,6 +1226,26 @@ for rel_path in "${PERMISSION_TRIGGER_LINE_FILES[@]}"; do
     add_issue 'ERROR' 'guideline-permission-trigger-line-missing' "$rel_path" \
       'permission-rulesトリガー行（正典。DESIGN 2.27 追補対応）が見つかりません（欠落・改変の可能性があります。行位置・前後文脈は問わない存在検証）'
     GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT=$((GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT + 1))
+  fi
+done
+
+# --- (j) commands/*.md 固定12ファイルのURL区切り規約行（2026-08-04案件「URL 区切り規約の
+#     commands 展開＋機械検証化」T2対応） -----------------------------------------
+# 対象は COMMANDS_URL_DELIMITER_FILES の固定12件（commands/*.md 全件）。(d)(f)(g)(h)と
+# 同じ理由（本チェック追加のためだけに無関係な既存フィクスチャ・テストを大量に更新せずに
+# 済ませる設計判断）で、対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする。
+GUIDELINE_URL_DELIMITER_MISSING_COUNT=0
+
+for rel_path in "${COMMANDS_URL_DELIMITER_FILES[@]}"; do
+  f="$REPO_ROOT/$rel_path"
+  [ -f "$f" ] || continue
+
+  file_content="$(cat "$f")"
+  file_content="${file_content//$'\r'/}"
+  if [[ "$file_content" != *"$GUIDELINE_URL_DELIMITER_LINE"* ]]; then
+    add_issue 'ERROR' 'guideline-url-delimiter-missing' "$rel_path" \
+      'URL区切り規約行（正典。2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応）が見つかりません（欠落・改変の可能性があります。行位置・前後文脈は問わない存在検証）'
+    GUIDELINE_URL_DELIMITER_MISSING_COUNT=$((GUIDELINE_URL_DELIMITER_MISSING_COUNT + 1))
   fi
 done
 
@@ -1376,6 +1463,147 @@ if git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 # ---------------------------------------------------------------------------
+# 12) Markdown 文書中のリポジトリ内パス参照の実在検証（issue #34）
+#
+# 詳細は冒頭コメント参照。対象文書リスト・除外リストは、T2（回帰テスト追加）での
+# 参照・変更を容易にするため本セクション最上部にまとめる。
+# ---------------------------------------------------------------------------
+
+# 対象文書（glob可。REPO_ROOT からの相対パス）。
+DOC_PATH_REF_TARGET_GLOBS=(
+  'README.md'
+  'CLAUDE.md'
+  'CONTRIBUTING.md'
+  'DESIGN.md'
+  'DEVELOPMENT.md'
+  'agents/*.md'
+  'commands/*.md'
+  'skills/*/SKILL.md'
+)
+
+# 除外(4): 利用者側資材の例示パスとして許容する明示除外リスト（実在しなくてもERROR
+# にしない）。現状は commands/optimize-assets.md・skills/conventions/SKILL.md が
+# 他AIツール向け資材の例として挙げる .github/copilot-instructions.md のみ（本リポジトリ
+# 内には実在しないことを承知のうえでの例示。2026-08-04時点の事前スキャンでの確認範囲）。
+DOC_PATH_REF_EXCLUDE_LIST=(
+  '.github/copilot-instructions.md'
+)
+
+# 検出プレフィックス・拡張子の正規表現。.hw/ を検出プレフィックスに含める理由:
+# .hw/ 自体は利用者側生成パスで実在検証の対象外（除外(1)）だが、検出プレフィックス
+# から外してしまうと除外(1)の件数出力が常に0固定になり、「除外規則が機能して
+# 拾ったうえで弾いているのか、そもそも検出漏れで一度も動いていないのか」が
+# 区別できなくなる。実際、.hw/配下の散文中の例示パス（.hw/plans/roadmap.md 等、
+# 将来生成される想定の例示）には2026-08-04時点で実在しないものが十数件あり、
+# 検出プレフィックスに含めたうえで除外しないと誤検知になることを事前スキャンで
+# 確認済み。
+DOC_PATH_REF_BT_PATTERN='`([^`]+)`'
+DOC_PATH_REF_PREFIX_RE='^(agents/|commands/|skills/|scripts/|\.github/|\.claude-plugin/|\.hw/)'
+DOC_PATH_REF_EXT_RE='\.(md|sh|json|yml|yaml)$'
+
+DOC_PATH_REF_FILES_SCANNED=0
+DOC_PATH_REF_TOKEN_TOTAL=0
+DOC_PATH_REF_SKIP_HW_COUNT=0
+DOC_PATH_REF_SKIP_PLACEHOLDER_COUNT=0
+DOC_PATH_REF_SKIP_WILDCARD_COUNT=0
+DOC_PATH_REF_SKIP_EXCLUDE_LIST_COUNT=0
+DOC_PATH_REF_MISSING_COUNT=0
+DOC_PATH_REF_TRAVERSAL_COUNT=0
+
+# 除外(4)のリスト所属判定（完全一致）。
+is_doc_path_ref_excluded() {
+  local candidate="$1" x
+  for x in "${DOC_PATH_REF_EXCLUDE_LIST[@]}"; do
+    [ "$x" = "$candidate" ] && return 0
+  done
+  return 1
+}
+
+# 対象文書の実ファイル一覧を組み立てる（存在しないものは自然に対象外。nullglob設定済み）。
+DOC_PATH_REF_TARGET_FILES=()
+for doc_glob in "${DOC_PATH_REF_TARGET_GLOBS[@]}"; do
+  for f in "$REPO_ROOT"/$doc_glob; do
+    [ -f "$f" ] || continue
+    DOC_PATH_REF_TARGET_FILES+=("$f")
+  done
+done
+
+for f in "${DOC_PATH_REF_TARGET_FILES[@]}"; do
+  rel_doc="${f#"$REPO_ROOT"/}"
+  DOC_PATH_REF_FILES_SCANNED=$((DOC_PATH_REF_FILES_SCANNED + 1))
+
+  doc_lineno=0
+  while IFS= read -r doc_line || [ -n "$doc_line" ]; do
+    doc_lineno=$((doc_lineno + 1))
+    doc_line="${doc_line%$'\r'}"
+    doc_rest="$doc_line"
+
+    while [[ "$doc_rest" =~ $DOC_PATH_REF_BT_PATTERN ]]; do
+      bt_content="${BASH_REMATCH[1]}"
+      doc_rest="${doc_rest#*"${BASH_REMATCH[0]}"}"
+
+      # 単語分割は pathname展開（グロブ）を伴わない `read -ra` を用いる
+      # （extract_frontmatter_list_field 関数の同種の設計判断を踏襲。バッククォート
+      # 内容が "*" 等のグロブ文字を含む場合に意図せず実ファイル名へ展開されるのを防ぐ）。
+      read -ra bt_words <<< "$bt_content"
+      for word in "${bt_words[@]}"; do
+        if ! [[ "$word" =~ $DOC_PATH_REF_PREFIX_RE ]] || ! [[ "$word" =~ $DOC_PATH_REF_EXT_RE ]]; then
+          continue
+        fi
+        DOC_PATH_REF_TOKEN_TOTAL=$((DOC_PATH_REF_TOKEN_TOTAL + 1))
+
+        # `..` を含むトークンは、除外分類（.hw配下・プレースホルダ・ワイルドカード・
+        # 利用者資材例示リスト）やファイルシステム参照（-f 判定・compgen -G）へ
+        # 到達する前にここで短絡してERRORとする（差し戻し対応 SEC-L1/qa-L3）。
+        # 正当な文書内パス参照に `..` が現れる余地はなく（対象文書はすべてリポジトリ
+        # 直下からの相対パスで記述する規約のため）、以降の分岐でREPO_ROOT外のパスに
+        # 対して -f やcompgen -Gを実行し存在有無を機械的に探査させないことが安全。
+        if [[ "$word" == *'..'* ]]; then
+          add_issue 'ERROR' 'doc-path-ref-traversal' "${rel_doc}:${doc_lineno}" \
+            "リポジトリ内パス参照 '${word}' に親ディレクトリ参照(..)が含まれています（リポジトリ直下からの相対パスで記述してください）"
+          DOC_PATH_REF_TRAVERSAL_COUNT=$((DOC_PATH_REF_TRAVERSAL_COUNT + 1))
+        elif [[ "$word" == .hw/* ]]; then
+          DOC_PATH_REF_SKIP_HW_COUNT=$((DOC_PATH_REF_SKIP_HW_COUNT + 1))
+        elif [[ "$word" == *'<'* || "$word" == *'…'* ]]; then
+          DOC_PATH_REF_SKIP_PLACEHOLDER_COUNT=$((DOC_PATH_REF_SKIP_PLACEHOLDER_COUNT + 1))
+        elif [[ "$word" == *'*'* ]]; then
+          DOC_PATH_REF_SKIP_WILDCARD_COUNT=$((DOC_PATH_REF_SKIP_WILDCARD_COUNT + 1))
+          # compgen -G はパターンを引数として受け取り、その内部でのみglob展開する
+          # （呼び出し側シェルでの単語分割・展開を経由しないため、REPO_ROOT等の
+          # パスにたまたま特殊文字が含まれていても安全）。1件も一致しなければ
+          # 非0で終了しwc_hitsは空になる。
+          wc_hits=""
+          if wc_hits="$(cd "$REPO_ROOT" && compgen -G "$word" 2>/dev/null)"; then
+            :
+          fi
+          if [ -z "$wc_hits" ]; then
+            add_issue 'ERROR' 'doc-path-ref-wildcard-empty' "${rel_doc}:${doc_lineno}" \
+              "ワイルドカードパス参照 '${word}' に一致する実ファイルが1件もありません"
+            DOC_PATH_REF_MISSING_COUNT=$((DOC_PATH_REF_MISSING_COUNT + 1))
+          fi
+        elif is_doc_path_ref_excluded "$word"; then
+          DOC_PATH_REF_SKIP_EXCLUDE_LIST_COUNT=$((DOC_PATH_REF_SKIP_EXCLUDE_LIST_COUNT + 1))
+        else
+          if [ ! -f "$REPO_ROOT/$word" ]; then
+            add_issue 'ERROR' 'doc-path-ref-missing' "${rel_doc}:${doc_lineno}" \
+              "リポジトリ内パス参照 '${word}' に一致する実ファイルが見つかりません"
+            DOC_PATH_REF_MISSING_COUNT=$((DOC_PATH_REF_MISSING_COUNT + 1))
+          fi
+        fi
+      done
+    done
+  done < "$f"
+done
+
+# 抽出0件チェック（対象文書が1件以上存在した場合のみ判定する。対象文書自体が
+# 1件も存在しない検証対象ディレクトリ＝セクション6・9(d)・10・11と同様の
+# 「静かにスキップ」対象では、本チェックも自然にスキップされる）。
+if [ "$DOC_PATH_REF_FILES_SCANNED" -gt 0 ] && [ "$DOC_PATH_REF_TOKEN_TOTAL" -eq 0 ]; then
+  add_issue 'ERROR' 'doc-path-ref-extract-zero' 'docs' \
+    '対象文書全体からリポジトリ内パス形トークンを1件も抽出できませんでした（検出パターンの変化等により検証が空振りしている可能性があります）'
+fi
+
+# ---------------------------------------------------------------------------
 # 結果出力
 # ---------------------------------------------------------------------------
 
@@ -1406,9 +1634,10 @@ echo "対象件数: agents=$agent_total / commands=$command_total / skills=$skil
 echo "README突合: エージェント README=$AGENT_README_COUNT/実体=$AGENT_FILE_COUNT  コマンド README=$CMD_README_COUNT/実体=$CMD_FILE_COUNT  スキル README=$SKILL_README_COUNT/実体=$SKILL_FILE_COUNT"
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
-echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件"
+echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件 / 非リーダーfork スキル呼び出し検出=${FORK_SKILL_CALL_HITS}件 / commands URL区切り規約行欠落=${GUIDELINE_URL_DELIMITER_MISSING_COUNT}件"
 echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
 echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
+echo "文書内パス参照検証: 走査対象=${DOC_PATH_REF_FILES_SCANNED}文書 / 抽出トークン=${DOC_PATH_REF_TOKEN_TOTAL}件 / 除外(.hw配下)=${DOC_PATH_REF_SKIP_HW_COUNT}件 / 除外(プレースホルダ)=${DOC_PATH_REF_SKIP_PLACEHOLDER_COUNT}件 / 除外(ワイルドカード)=${DOC_PATH_REF_SKIP_WILDCARD_COUNT}件 / 除外(利用者資材例示リスト)=${DOC_PATH_REF_SKIP_EXCLUDE_LIST_COUNT}件 / 不在検出=${DOC_PATH_REF_MISSING_COUNT}件 / トラバーサル検出=${DOC_PATH_REF_TRAVERSAL_COUNT}件"
 echo ''
 
 if [ "${#ISSUES[@]}" -eq 0 ]; then

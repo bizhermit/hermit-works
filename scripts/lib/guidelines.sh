@@ -79,14 +79,14 @@ GUIDELINE_ANCHOR_PLUS_BLOCK="${GUIDELINE_ANCHOR_LINE}"$'\n'"${GUIDELINE_COMMON_B
 GUIDELINE_TK2_E1_LINE='- 『連携』に記載した**変更を伴う**依頼は、原則として自ら起動せず、完了報告の「引き継ぎ事項」に記載して呼び出し元の判断に委ねる。ただし次は自ら起動してよい: (a) 自グループの `*-lead` が自グループ内の担当へ委任する場合、(b) 作業設計5原則-5の評価ループおよび三役審議のための評価者・視点役の起動（グループ外を含む）、(c) 読み取り専用の調査補助。'
 
 # 注入耐性文言（P-4a/P-4b対応。sec-lead方針: .hw/plans/artifacts/2026-07-29-sec-lead-triage.md
-# 「即時修正 P-4a」節）。利用者資材を直接読む commands/skills 固定4ファイルの、当該手順の
+# 「即時修正 P-4a」節）。利用者資材を直接読む commands/skills 固定5ファイルの、当該手順の
 # 直前・直後に挿入される短文で、セクション9(d)で存在検証する。
 #
 # 設計判断（GUIDELINE_COMMON_LINES/GUIDELINE_TK2_E1_LINE と同じ理由で本ライブラリの定数として
-# 保持する）: 挿入先4ファイルでは、リスト項目（'- '始まり）・字下げのみ（先頭3スペース）等
-# 挿入位置の文脈が異なる（skills/conventions/SKILL.md は`## 注意`節の箇条書きの1項目、
-# commands/optimize-assets.md・commands/audit-assets.md・commands/draft-docs.md は手順内の
-# 独立段落）。よって本定数は
+# 保持する）: 挿入先5ファイルでは、リスト項目（'- '始まり）・字下げのみ（先頭3スペース）等
+# 挿入位置の文脈が異なる（skills/conventions/SKILL.md・skills/repo-map/SKILL.md は`## 注意`節の
+# 箇条書きの1項目、commands/optimize-assets.md・commands/audit-assets.md・commands/draft-docs.md
+# は手順内の独立段落。2026-08-03案件issue28-T2でskills/repo-map/SKILL.mdを追加）。よって本定数は
 # 前後の記号（リストマーカー・字下げ）を含まない文そのものとし、ファイル内容にこの文字列が
 # 部分文字列として含まれるかのみを見る（行位置・前後文脈に依存しない存在検証。案件計画注記
 # 「T8でaudit-assets.mdは独立段落化済み」を踏まえた設計）。
@@ -111,6 +111,7 @@ GUIDELINE_DECISION_PROCEDURE_LINE='- 規約・命名・表記等の慣習的な�
 # commands/draft-docs.md はこの条件により2026-07-30案件（docgen-command）で追加。
 COMMANDS_SKILLS_INJECTION_FILES=(
   'skills/conventions/SKILL.md'
+  'skills/repo-map/SKILL.md'
   'commands/optimize-assets.md'
   'commands/audit-assets.md'
   'commands/draft-docs.md'
@@ -188,6 +189,64 @@ PERMISSION_TRIGGER_LINE_FILES=(
   'agents/sec-audit.md'
   'agents/sec-appsec.md'
   'agents/infra-devops.md'
+)
+
+# context: fork スキル呼び出しトークン（CONTRIBUTING 4.2 運用規範「fork スキル（hw:repo-map・
+# hw:conventions）はメイン会話・リーダー層から呼ぶ」対応。2026-08-03案件issue28
+# sec-audit差し戻し M-s3: この運用規範が無検知のままだと CONTRIBUTING 1.4 原則4
+# 「検知手段のない規範は追加しない」と不整合になるため、静的部分検知（非リーダー
+# agents/*.md 本文にこれらのスキル呼び出しトークンが含まれていないか）を
+# scripts/validate.sh セクション9(i)へ追加する。本定数はその正典）。
+#
+# 設計判断（GUIDELINE_COMMON_LINES 等と同じ理由で本ライブラリの定数として保持する）:
+# トークンは `hw:` 接頭辞付きの完全表記のみとする。commands/*.md・skills/*/SKILL.md での
+# 実際の呼び出し表記（例: commands/init.md「hw:repo-map スキルの手順で」）はすべて
+# この接頭辞付き表記のため、この狭い定義で検知目的を満たす。接頭辞なしの一般名詞的言及
+# （例: skills/add-service/SKILL.md「repo-map スキル」）は対象外の commands/・skills/ 側の
+# 表記であり、かつ「repo-map」単独は一般名詞との誤検知区別が難しいため、本定数には含めない
+# （検査対象自体が非リーダー agents/*.md 限定であり、commands/・skills/ は対象外のため
+# 実害もない）。
+FORK_SKILL_CALL_TOKENS=(
+  'hw:repo-map'
+  'hw:conventions'
+)
+
+# URL区切り規約行（正典: .hw/plans/2026-08-04-url-rule-commands-enforcement.md T2。統括が
+# PR報告で URL を `**` 強調＋全角括弧で挟みリンク不能にした事象〔2026-08-04利用者指摘〕への
+# 再発防止）。正本は agents/mgmt-coordinator.md「出力」節の URL 区切り規約（docs系4体にも
+# 同旨3行ブロックで既存展開済み・本件のスコープ外）だが、/hw:request 等コマンド経由の
+# メイン会話実行ではペルソナ宣言だけでは mgmt-coordinator.md の規範がコンテキストに載らない
+# （T1原因分析）ため、commands/*.md 全12ファイルへ自己完結の1行として再掲し、本定数で
+# 機械検証する（CONTRIBUTING 1.4 原則4「検知手段のない規範は追加しない」対応）。
+#
+# 設計判断（GUIDELINE_COMMON_LINES 等と同じ理由で本ライブラリの定数として保持する）:
+# commands は長単一行が慣習のため、docs系4体の3行ブロックとは別に1行形で用意する
+# （文言は同旨・語彙一致。T1確定文言、挿入行md5=bda59cc6758cd64e3fdafca78d0effcb）。
+# 前後の記号（リストマーカー・字下げ）は含まない文そのものとし、ファイル内容にこの文字列が
+# 部分文字列として含まれるかのみを見る（行位置・前後文脈に依存しない存在検証。
+# GUIDELINE_INJECTION_NOTE_LINE と同方式。commands/show-org.md は箇条書きの字下げなし、
+# 他11ファイルは字下げありと文脈が異なるため、記号・字下げを含めない設計が必須）。
+GUIDELINE_URL_DELIMITER_LINE='URL区切り: 利用者向け出力・成果物文書に URL を含める場合は、markdown リンク `[表示名](URL)` または `<URL>` を優先し、裸 URL を書くときは前後を空白・改行で区切り、直後に句読点・助詞・装飾記号（`**` 強調や全角括弧等）を直接続けない（AI間の内部報告は対象外）。'
+
+# セクション9(j)の検証対象12ファイル（REPO_ROOTからの相対パス固定。commands/*.md 全件。
+# 設計仕様（本体案件 2026-08-04-url-rule-commands-enforcement.md）: 利用者向け出力を持つ
+# commands は全件が該当する（注入耐性文言の「固定5ファイル限定」〔利用者資材を読む手順の
+# 有無で絞り込み〕とは根拠が異なり絞り込まない）。COMMANDS_SKILLS_INJECTION_FILES 等と同じ
+# 理由でリスト方式を踏襲する。commands 追加時はこのリストへの追加を要する
+# （CONTRIBUTING 1.4 原則4の再評価条件と同様、新規 commands 追加時に見直す）。
+COMMANDS_URL_DELIMITER_FILES=(
+  'commands/audit-assets.md'
+  'commands/draft-docs.md'
+  'commands/help.md'
+  'commands/init.md'
+  'commands/optimize-assets.md'
+  'commands/plan.md'
+  'commands/report.md'
+  'commands/request.md'
+  'commands/review.md'
+  'commands/routine.md'
+  'commands/show-org.md'
+  'commands/standup.md'
 )
 
 # エージェントのリーダー判定（ファイル名 = frontmatter `name` 基準。mgmt-coordinator または
