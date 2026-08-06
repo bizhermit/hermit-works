@@ -31,6 +31,9 @@ name: validate
 #      回帰テスト（存在する場合のみ実行。上記4〜6と同様、スクリプト自体が削除された
 #      場合でもジョブを失敗させず、スキップした旨のみ記録する）。同スクリプトは gh CLI を
 #      スタブ化して実行するため、CI でも GitHub API へのアクセス・認証は発生しない。
+#   8. bash .claude/scripts/tests/run-verify-assets-tests.sh : .claude/scripts/verify-assets.sh の
+#      回帰テスト（存在する場合のみ実行。上記4〜7と同様、スクリプト自体が削除された
+#      場合でもジョブを失敗させず、スキップした旨のみ記録する）。
 #
 # 秘密情報・外部サービスへの依存: なし。使用する外部ネットワークアクセスは
 # actions/checkout と、Claude Code CLI ネイティブバイナリ本体（downloads.claude.ai/
@@ -167,4 +170,12 @@ jobs:
             bash .claude/scripts/tests/run-close-linked-issues-tests.sh
           else
             echo ".claude/scripts/tests/run-close-linked-issues-tests.sh が見つからないためスキップします"
+          fi
+
+      - name: "回帰テスト（.claude/scripts/verify-assets.sh 用: .claude/scripts/tests/run-verify-assets-tests.sh）"
+        run: |
+          if [ -f .claude/scripts/tests/run-verify-assets-tests.sh ]; then
+            bash .claude/scripts/tests/run-verify-assets-tests.sh
+          else
+            echo ".claude/scripts/tests/run-verify-assets-tests.sh が見つからないためスキップします"
           fi

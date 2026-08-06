@@ -30,10 +30,57 @@
 
 TMP_DIRS=()
 
+# cleanup(): TMP_DIRS に積まれた各パスを rm -rf する。
+#
+# 実行時ガード（issue #76 品質ゲートR1 sec参考指摘・統括裁定で追加）:
+#   本案件の回帰テスト作成中に、TMP_DIRS へ「mktemp -d の戻り値そのもの」ではなく
+#   派生パス（`"$dir-snapshot.patch"` のdirname）を誤って積んでしまい、その値が
+#   tmpルート（/tmp）そのものに化けて `rm -rf /tmp` 相当を実行しかけた事故が実際に起きた。
+#   それまでの安全性は「TMP_DIRSに積む値は必ずmktemp -d由来」という規律のみに依存しており、
+#   技術的な歯止めがなかった。以後は rm -rf の直前に、対象パスが tmp ルート
+#   （${TMPDIR:-/tmp}）の直下より深い場所（tmpルート自身ではない）であることを確認し、
+#   外れる場合は削除をスキップして警告を stderr に出す。
+#   本ライブラリは全ハーネス（5章列挙）が共有するため、本ガードの変更は全ハーネスに影響する
+#   （CONTRIBUTING 8.4「.claude/scripts/tests/lib/ 配下の変更は…5章に列挙された全ハーネスを
+#   実行して確認する」）。
+#
+# パス正規化（issue #76 品質ゲートR2 sec M2是正）:
+#   上記ガードを `case` によるレキシカル前方一致のみで実装すると、`..` を含む派生パス
+#   （例: `/tmp/../etc`）を「tmpルート配下でない」と誤って安全側に倒せず、逆に
+#   「tmpルート配下」と誤判定して通してしまう（文字列上は `/tmp/` で始まらないため実際には
+#   拒否されるが、`/tmp/foo/../../etc` のように一見tmpルート配下に見える形で拒否をすり抜ける
+#   ケースが実機で確認されている）。加えて、中間コンポーネントがsymlinkの場合、`rm -rf` は
+#   カーネルのパス解決に従いリンク先の中身を実際に削除してしまう（最終コンポーネントが
+#   symlinkの場合はリンク自体のunlinkのみで安全だが、中間symlinkは危険）。そのため、
+#   rm -rf の直前に `cd "$d" && pwd -P` 相当で実体パスへ正規化してから判定する
+#   （`pwd -P` はsymlinkも解決するため、`..`混入・中間symlink経由の混入を同時に弾ける）。
+#   比較基準となる tmp_root 側も同様に正規化する（TMPDIR自体がsymlinkを含む環境で
+#   基準とズレて全件を誤ってスキップし、一時ディレクトリが残留する事故を避けるため）。
+#   正規化に失敗した場合（cd不可等）は基準・対象のいずれであっても安全側（削除しない）に倒す。
 cleanup() {
-  local d
+  local d tmp_root tmp_root_real d_real
+  tmp_root="${TMPDIR:-/tmp}"
+  tmp_root_real="$(cd "$tmp_root" 2>/dev/null && pwd -P)"
   for d in ${TMP_DIRS[@]+"${TMP_DIRS[@]}"}; do
-    [ -n "$d" ] && [ -d "$d" ] && rm -rf "$d"
+    [ -n "$d" ] || continue
+    [ -d "$d" ] || continue
+    if [ -z "$tmp_root_real" ]; then
+      echo "警告: cleanup() をスキップしました。tmpルート（$tmp_root）の正規化に失敗したため、安全のため'$d' を削除しません。" >&2
+      continue
+    fi
+    d_real="$(cd "$d" 2>/dev/null && pwd -P)"
+    if [ -z "$d_real" ]; then
+      echo "警告: cleanup() をスキップしました。'$d' の正規化に失敗したため、安全のため削除しません。" >&2
+      continue
+    fi
+    case "$d_real" in
+      "$tmp_root_real"/?*)
+        rm -rf "$d"
+        ;;
+      *)
+        echo "警告: cleanup() をスキップしました。'$d'（正規化後: $d_real）はtmpルート（正規化後: $tmp_root_real）配下の想定パスではありません（安全のため削除しません。TMP_DIRSへ積む値はmktemp -dの戻り値そのものにしてください）。" >&2
+        ;;
+    esac
   done
 }
 trap cleanup EXIT INT TERM

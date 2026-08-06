@@ -117,6 +117,9 @@ bash .claude/scripts/tests/run-sync-guidelines-tests.sh
 # .claude/scripts/close-linked-issues.sh 変更時のみ
 bash .claude/scripts/tests/run-close-linked-issues-tests.sh
 
+# .claude/scripts/verify-assets.sh 変更時のみ
+bash .claude/scripts/tests/run-verify-assets-tests.sh
+
 # .claude/scripts/tests/lib/ 配下（全ハーネス共通ライブラリ）変更時は上記の全ハーネスを実行
 # （詳細・合格基準・現行の一覧は CONTRIBUTING.md 5章）
 ```
