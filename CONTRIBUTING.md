@@ -988,6 +988,9 @@ DESIGN 2.30 参照））。
    README の「使い方」「スキル」表の見出しを変更する場合は、`commands/help.md` の実行時抽出（見出し
    アンカー）も併せて確認してください。
 
+   項目1・2を一括実行し未コミット差分のスナップショットも取得するローカル補助として
+   `bash .claude/scripts/verify-assets.sh` を利用できます（必須手順1・2の代替ではありません）。
+
    `.claude/scripts/validate.sh` 自体の回帰テスト（`.claude/scripts/tests/run-tests.sh`、
    qa-test整備）は `bash .claude/scripts/tests/run-tests.sh` で実行できます。
    `.claude/scripts/validate.sh` を変更した場合は、完了報告前に必ずこちらも実行し、全ケースPASS
@@ -1000,7 +1003,9 @@ DESIGN 2.30 参照））。
    `.claude/scripts/sync-guidelines.sh` を変更した場合は
    `bash .claude/scripts/tests/run-sync-guidelines-tests.sh`（infra-devops整備）を、
    `.claude/scripts/close-linked-issues.sh` を変更した場合は
-   `bash .claude/scripts/tests/run-close-linked-issues-tests.sh`（infra-devops整備）を実行し、
+   `bash .claude/scripts/tests/run-close-linked-issues-tests.sh`（infra-devops整備）を、
+   `.claude/scripts/verify-assets.sh` を変更した場合は
+   `bash .claude/scripts/tests/run-verify-assets-tests.sh`（infra-devops整備）を実行し、
    全ケースPASSであることを確認してください。回帰テストが共有する共通ライブラリ
    （`.claude/scripts/tests/lib/` 配下）を変更した場合は、影響が lib/ を共有する全ハーネスに
    及ぶため、以下の全ハーネスを実行し、全ケースPASSであることを確認してください（新たなハーネスを
@@ -1011,6 +1016,7 @@ DESIGN 2.30 参照））。
    - `bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh`
    - `bash .claude/scripts/tests/run-sync-guidelines-tests.sh`
    - `bash .claude/scripts/tests/run-close-linked-issues-tests.sh`
+   - `bash .claude/scripts/tests/run-verify-assets-tests.sh`
 
    回帰テストを新設すべきかの判断基準と配置は8.4を参照してください。
 
