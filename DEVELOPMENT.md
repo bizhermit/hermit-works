@@ -113,6 +113,9 @@ bash scripts/tests/run-aggregate-agent-token-usage-tests.sh
 # scripts/sync-guidelines.sh 変更時のみ
 bash scripts/tests/run-sync-guidelines-tests.sh
 
+# scripts/close-linked-issues.sh 変更時のみ
+bash scripts/tests/run-close-linked-issues-tests.sh
+
 # scripts/tests/lib/ 配下（全ハーネス共通ライブラリ）変更時は上記の全ハーネスを実行
 # （詳細・合格基準・現行の一覧は CONTRIBUTING.md 5章）
 ```

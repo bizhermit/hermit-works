@@ -1201,6 +1201,36 @@ PR 1回の増分を受け入れて (b) を採用し直した。これにより `
 の第2親＝`develop` 側のリリース準備コミット）・リリース PR の squash 禁止等、本節の他の判断は
 変更しない。
 
+**2026-08-05 追補: issue クローズの自動化はスクリプト方式（CI 案は仕様上不成立のため破棄）**
+
+**判断**: 案件完了時の issue クローズは CI で自動化せず、`scripts/close-linked-issues.sh`
+（dry-run 既定・`--apply` と y/N 確認で実行）による手動運用の支援に留める。develop 向け PR の
+マージ契機で紐づく issue を自動クローズする CI（`on: pull_request` + GraphQL の
+`closingIssuesReferences`）は実装・レベル3ゲート合格まで進めたが、着手時の一次情報再確認により
+**GitHub の closing キーワードは PR が既定ブランチを対象とする場合にのみ解釈され、それ以外の
+ブランチ向け PR ではキーワードが無視されリンク自体が作成されない**ことが判明したため破棄した
+（利用者裁定 2026-08-05。正本は CONTRIBUTING 9.1、スクリプトの変更手順は同 8章）。
+
+**理由**: 本リポジトリの既定ブランチはプラグイン配布が既定ブランチ参照であるため `main` のままと
+しており（本節冒頭の判断）、案件の統合先は `develop` である。この組み合わせでは GitHub 側に
+「PR ↔ issue」のクローズ用リンクが作られないため、リンクを前提とする自動化（GraphQL 経由・
+GitHub 標準の自動クローズとも）は原理的に発火しない。PR 本文を自前で正規表現パースすれば発火は
+可能だが、それは「GitHub が解釈しなかった記述をこちらが解釈する」ことであり、誤クローズの責任を
+CI（無人実行）に負わせることになる。クローズは利用者に通知が飛び実質的に取り返しがつかないため、
+無人での自動実行より、対象の抽出と確認を機械化したうえで実行判断を人に残す方式を選んだ。
+
+**検討時に退けた代替案**: (a) 既定ブランチを `develop` に変更する — プラグイン配布が既定ブランチ
+参照であるため配布仕様と衝突する。(b) PR ごとに GitHub の Development パネルで手動リンクし
+`closingIssuesReferences` 経由で CI 発火させる — PR ごとの手作業が残り、手動クローズを置き換える
+効果が薄い。(c) main へのリリース時にクローズする — リリース単位でしか閉じられず、案件完了と
+issue の状態が長期間ずれる。
+
+**証跡**: PR #62（base=develop、本文に `Closes #57`）の `closingIssuesReferences` が空であること、
+issue #57 側のタイムラインに ConnectedEvent がなく cross-referenced のみであることを実データで確認
+（2026-08-05、直近8 PR で同様）。一次情報は GitHub 公式ドキュメント「Linking a pull request to an
+issue」の「If the pull request targets any other branch, then these keywords are ignored, no links
+are created, and merging the PR has no effect on the issues」。
+
 ### 2.33 保守運用の都合による配布資材の変更禁止
 
 **判断**: 本リポジトリ自身を保守するための運用上の仕組み（保守用の定期実行・保守者向けの報告
