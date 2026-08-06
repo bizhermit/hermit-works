@@ -4,7 +4,7 @@ name: validate
 #
 # 検証手順の正本は CONTRIBUTING.md 5章「変更後の確認手順（必須）」。ここではその手順を
 # push / pull_request 時に自動実行するのみで、検証内容そのものの正本は各スクリプト側
-# （scripts/validate.sh 等）にある。手順を変更する場合は CONTRIBUTING.md 側を先に更新し、
+# （.claude/scripts/validate.sh 等）にある。手順を変更する場合は CONTRIBUTING.md 側を先に更新し、
 # 本ワークフローはそれに追従させること。
 #
 # ジョブ構成（実施内容と目的）:
@@ -14,20 +14,20 @@ name: validate
 #      その場インストールして実行する（npm パッケージ配布ではなくこの方式を選んだ理由・
 #      devcontainer との方式差異は下記コメント参照）。認証不要でオフライン動作することを
 #      確認済み（HOME を空にした状態でも成功/失敗を正しく判定する）。
-#   2. bash scripts/validate.sh        : frontmatter必須項目・命名規則・重複・README整合性・
-#      秘密情報混入チェック等の静的検証（詳細は scripts/validate.sh 冒頭コメント）。
-#   3. bash scripts/tests/run-tests.sh : 上記 validate.sh 自体の回帰テスト。
-#   4. bash scripts/tests/run-git-changelog-tests.sh : scripts/git-changelog.sh の回帰テスト
+#   2. bash .claude/scripts/validate.sh        : frontmatter必須項目・命名規則・重複・README整合性・
+#      秘密情報混入チェック等の静的検証（詳細は .claude/scripts/validate.sh 冒頭コメント）。
+#   3. bash .claude/scripts/tests/run-tests.sh : 上記 validate.sh 自体の回帰テスト。
+#   4. bash .claude/scripts/tests/run-git-changelog-tests.sh : .claude/scripts/git-changelog.sh の回帰テスト
 #      （存在する場合のみ実行。将来的にスクリプト自体が削除された場合でもジョブを
 #      失敗させず、スキップした旨のみ記録する）。
-#   5. bash scripts/tests/run-aggregate-agent-token-usage-tests.sh :
-#      scripts/aggregate-agent-token-usage.sh の回帰テスト（存在する場合のみ実行。
+#   5. bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh :
+#      .claude/scripts/aggregate-agent-token-usage.sh の回帰テスト（存在する場合のみ実行。
 #      上記4と同様、スクリプト自体が削除された場合でもジョブを失敗させず、
 #      スキップした旨のみ記録する）。
-#   6. bash scripts/tests/run-sync-guidelines-tests.sh : scripts/sync-guidelines.sh の
+#   6. bash .claude/scripts/tests/run-sync-guidelines-tests.sh : .claude/scripts/sync-guidelines.sh の
 #      回帰テスト（存在する場合のみ実行。上記4・5と同様、スクリプト自体が削除された
 #      場合でもジョブを失敗させず、スキップした旨のみ記録する）。
-#   7. bash scripts/tests/run-close-linked-issues-tests.sh : scripts/close-linked-issues.sh の
+#   7. bash .claude/scripts/tests/run-close-linked-issues-tests.sh : .claude/scripts/close-linked-issues.sh の
 #      回帰テスト（存在する場合のみ実行。上記4〜6と同様、スクリプト自体が削除された
 #      場合でもジョブを失敗させず、スキップした旨のみ記録する）。同スクリプトは gh CLI を
 #      スタブ化して実行するため、CI でも GitHub API へのアクセス・認証は発生しない。
@@ -131,40 +131,40 @@ jobs:
       - name: claude plugin validate .
         run: claude plugin validate .
 
-      - name: 静的検証スクリプト（scripts/validate.sh）
-        run: bash scripts/validate.sh
+      - name: 静的検証スクリプト（.claude/scripts/validate.sh）
+        run: bash .claude/scripts/validate.sh
 
-      - name: "回帰テスト（scripts/validate.sh 用: scripts/tests/run-tests.sh）"
-        run: bash scripts/tests/run-tests.sh
+      - name: "回帰テスト（.claude/scripts/validate.sh 用: .claude/scripts/tests/run-tests.sh）"
+        run: bash .claude/scripts/tests/run-tests.sh
 
-      - name: "回帰テスト（scripts/git-changelog.sh 用: scripts/tests/run-git-changelog-tests.sh）"
+      - name: "回帰テスト（.claude/scripts/git-changelog.sh 用: .claude/scripts/tests/run-git-changelog-tests.sh）"
         run: |
-          if [ -f scripts/tests/run-git-changelog-tests.sh ]; then
-            bash scripts/tests/run-git-changelog-tests.sh
+          if [ -f .claude/scripts/tests/run-git-changelog-tests.sh ]; then
+            bash .claude/scripts/tests/run-git-changelog-tests.sh
           else
-            echo "scripts/tests/run-git-changelog-tests.sh が見つからないためスキップします"
+            echo ".claude/scripts/tests/run-git-changelog-tests.sh が見つからないためスキップします"
           fi
 
-      - name: "回帰テスト（scripts/aggregate-agent-token-usage.sh 用: scripts/tests/run-aggregate-agent-token-usage-tests.sh）"
+      - name: "回帰テスト（.claude/scripts/aggregate-agent-token-usage.sh 用: .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh）"
         run: |
-          if [ -f scripts/tests/run-aggregate-agent-token-usage-tests.sh ]; then
-            bash scripts/tests/run-aggregate-agent-token-usage-tests.sh
+          if [ -f .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh ]; then
+            bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh
           else
-            echo "scripts/tests/run-aggregate-agent-token-usage-tests.sh が見つからないためスキップします"
+            echo ".claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh が見つからないためスキップします"
           fi
 
-      - name: "回帰テスト（scripts/sync-guidelines.sh 用: scripts/tests/run-sync-guidelines-tests.sh）"
+      - name: "回帰テスト（.claude/scripts/sync-guidelines.sh 用: .claude/scripts/tests/run-sync-guidelines-tests.sh）"
         run: |
-          if [ -f scripts/tests/run-sync-guidelines-tests.sh ]; then
-            bash scripts/tests/run-sync-guidelines-tests.sh
+          if [ -f .claude/scripts/tests/run-sync-guidelines-tests.sh ]; then
+            bash .claude/scripts/tests/run-sync-guidelines-tests.sh
           else
-            echo "scripts/tests/run-sync-guidelines-tests.sh が見つからないためスキップします"
+            echo ".claude/scripts/tests/run-sync-guidelines-tests.sh が見つからないためスキップします"
           fi
 
-      - name: "回帰テスト（scripts/close-linked-issues.sh 用: scripts/tests/run-close-linked-issues-tests.sh）"
+      - name: "回帰テスト（.claude/scripts/close-linked-issues.sh 用: .claude/scripts/tests/run-close-linked-issues-tests.sh）"
         run: |
-          if [ -f scripts/tests/run-close-linked-issues-tests.sh ]; then
-            bash scripts/tests/run-close-linked-issues-tests.sh
+          if [ -f .claude/scripts/tests/run-close-linked-issues-tests.sh ]; then
+            bash .claude/scripts/tests/run-close-linked-issues-tests.sh
           else
-            echo "scripts/tests/run-close-linked-issues-tests.sh が見つからないためスキップします"
+            echo ".claude/scripts/tests/run-close-linked-issues-tests.sh が見つからないためスキップします"
           fi

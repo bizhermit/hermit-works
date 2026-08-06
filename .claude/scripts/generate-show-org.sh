@@ -10,15 +10,15 @@
 #   README.md / commands/show-org.md の2箇所）。本スクリプトは commands/show-org.md
 #   のうち実際にエージェント構成に依存する「## 組織図」部分を agents/*.md から
 #   機械的に再生成することで、agents/*.md を単一の情報源（Single Source of Truth）にする。
-#   scripts/validate.sh は本スクリプトの生成結果と実ファイルの差分を検証する
-#   （「6) commands/show-org.md と scripts/generate-show-org.sh の生成結果との差分チェック」）。
+#   .claude/scripts/validate.sh は本スクリプトの生成結果と実ファイルの差分を検証する
+#   （「6) commands/show-org.md と .claude/scripts/generate-show-org.sh の生成結果との差分チェック」）。
 #
 # 設計方針:
 #   - commands/show-org.md のうちエージェント構成に依存しない静的な案内文
 #     （frontmatter・導入文・利用方法の案内）は、エージェントの増減とは無関係な
 #     コマンドの振る舞いそのものの記述であるため、本スクリプト内にテンプレートとして
 #     保持し、そのまま出力する（変更する場合は本スクリプトを直接編集する）。
-#   - グループの並び順・日本語ラベル（10グループ構成）は scripts/validate.sh の
+#   - グループの並び順・日本語ラベル（10グループ構成）は .claude/scripts/validate.sh の
 #     ALLOWED_GROUPS と同様、リポジトリの組織構成そのものの定義として本スクリプト内に
 #     保持する（新グループ新設のような低頻度の変更は許容し、ハードコードを避けたいのは
 #     あくまで「各グループに何が所属するか」という高頻度で変化する部分）。
@@ -33,15 +33,15 @@
 # 実行例:
 #   # commands/show-org.md を直接更新する（リポジトリルートは省略時にこのスクリプトの
 #   # 1階層上を使う）
-#   bash scripts/generate-show-org.sh
-#   bash scripts/generate-show-org.sh /path/to/repo-root
+#   bash .claude/scripts/generate-show-org.sh
+#   bash .claude/scripts/generate-show-org.sh /path/to/repo-root
 #
 #   # 動作確認のみ行い、実ファイルを変更しない（出力先を明示的に指定する）
-#   bash scripts/generate-show-org.sh /path/to/repo-root /tmp/show-org-check.md
+#   bash .claude/scripts/generate-show-org.sh /path/to/repo-root /tmp/show-org-check.md
 #
-#   # 生成結果と実ファイルの差分確認（scripts/validate.sh のセクション6も内部で同様の
+#   # 生成結果と実ファイルの差分確認（.claude/scripts/validate.sh のセクション6も内部で同様の
 #   # 手順を踏む）
-#   bash scripts/generate-show-org.sh /path/to/repo-root /tmp/show-org-check.md \
+#   bash .claude/scripts/generate-show-org.sh /path/to/repo-root /tmp/show-org-check.md \
 #     && diff -u /path/to/repo-root/commands/show-org.md /tmp/show-org-check.md
 #
 set -euo pipefail
@@ -50,7 +50,7 @@ export LC_ALL=C
 REPO_ROOT="${1:-}"
 if [ -z "$REPO_ROOT" ]; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+  REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 fi
 OUTPUT_FILE="${2:-$REPO_ROOT/commands/show-org.md}"
 
@@ -64,7 +64,7 @@ if [ "${#AGENT_FILES[@]}" -eq 0 ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# frontmatter読み取り（scripts/validate.sh の parse_frontmatter と同等の単純実装。
+# frontmatter読み取り（.claude/scripts/validate.sh の parse_frontmatter と同等の単純実装。
 # 複雑なYAML（配列・ネスト・多行文字列）は対象外。二重管理になるが、本スクリプトは
 # validate.sh と依存関係を持たせず単体で動く方針のため独立実装にしている）。
 # ---------------------------------------------------------------------------
@@ -158,14 +158,14 @@ for f in "${AGENT_FILES[@]}"; do
   base_name="$(basename "$f" .md)"
 
   if ! parse_frontmatter "$f"; then
-    echo "Error: frontmatterブロックが見つかりません: $f （先に scripts/validate.sh を通してください）" >&2
+    echo "Error: frontmatterブロックが見つかりません: $f （先に .claude/scripts/validate.sh を通してください）" >&2
     exit 1
   fi
 
   name_val="${FM[name]:-}"
   desc_val="${FM[description]:-}"
   if [ -z "$name_val" ] || [ -z "$desc_val" ]; then
-    echo "Error: name/description が欠落しています: $f （先に scripts/validate.sh を通してください）" >&2
+    echo "Error: name/description が欠落しています: $f （先に .claude/scripts/validate.sh を通してください）" >&2
     exit 1
   fi
 

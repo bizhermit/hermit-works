@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "bash",
       "args": [
-        "scripts/git-cleanup-branch.sh",
+        ".claude/scripts/git-cleanup-branch.sh",
         "${input:cleanupTargetBranch}"
       ],
       "options": {

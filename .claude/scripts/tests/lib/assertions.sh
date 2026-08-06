@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# scripts/tests/run-tests.sh と scripts/tests/run-git-changelog-tests.sh が共有する
+# .claude/scripts/tests/run-tests.sh と .claude/scripts/tests/run-git-changelog-tests.sh が共有する
 # アサーションヘルパー・一時ディレクトリ管理・テスト集計ロジック（M16 是正）。
 #
 # 方針:

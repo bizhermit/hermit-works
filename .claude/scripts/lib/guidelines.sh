@@ -4,20 +4,20 @@
 #
 # 位置づけ（2026-08-01案件B。DESIGN.md 2.30参照）:
 #   - 本ファイルが正典。GUIDELINE_* の値・対象ファイルリストを変更する場合は本ファイルを編集する。
-#   - scripts/validate.sh は本ファイルを SCRIPT_DIR 相対で source し、検証（逐語一致確認）のみを行う
+#   - .claude/scripts/validate.sh は本ファイルを SCRIPT_DIR 相対で source し、検証（逐語一致確認）のみを行う
 #     （値の実体はここに一元化し、validate.sh 側では保持しない）。
-#   - scripts/sync-guidelines.sh は、本ファイルの変更差分（git HEAD時点との比較）を対象ファイル群へ
+#   - .claude/scripts/sync-guidelines.sh は、本ファイルの変更差分（git HEAD時点との比較）を対象ファイル群へ
 #     機械的に反映する（伝播）。
 #   （正典＝lib／検証＝validate.sh／伝播＝sync-guidelines.sh の3分掌。CONTRIBUTING.md 1.5・1.8参照）
 #
 # 呼び出し規約:
-#   呼び出し側（scripts/validate.sh・scripts/sync-guidelines.sh・回帰テストハーネス）は、自身の
+#   呼び出し側（.claude/scripts/validate.sh・.claude/scripts/sync-guidelines.sh・回帰テストハーネス）は、自身の
 #   SCRIPT_DIR から相対的に本ファイルを source すること（REPO_ROOT 相対にはしない）。理由は
 #   GUIDELINE_COMMON_LINES 定義直前の設計判断コメントを参照（フィクスチャ独立性・テスト独立性の
 #   本旨は lib 切り出し後も維持している）。
 #
 # 本ファイル自体はロケール・シェルオプションを設定しない（source 専用ライブラリのため、
-# 呼び出し側が敷いた set -euo pipefail / LC_ALL=C 等の設定に従う。scripts/tests/lib/assertions.sh
+# 呼び出し側が敷いた set -euo pipefail / LC_ALL=C 等の設定に従う。.claude/scripts/tests/lib/assertions.sh
 # と同じ方針）。実行ビットは他のスクリプト群との統一のために付与しているのみで、本ファイルを
 # 直接実行するものではない。
 #
@@ -27,21 +27,21 @@
 # ことをセクション9(a)で検証する）。
 #
 # 設計判断（本ライブラリの定数として保持する。CONTRIBUTING.mdからの動的取得は採用しない。
-# 2026-08-01案件Bで scripts/validate.sh 冒頭からこのファイルへ切り出したが、切り出し後も
+# 2026-08-01案件Bで .claude/scripts/validate.sh 冒頭からこのファイルへ切り出したが、切り出し後も
 # 下記のフィクスチャ独立性・テスト独立性という本旨は変わらないため、呼び出し側は REPO_ROOT
 # 相対ではなく SCRIPT_DIR 相対で本ファイルを source する設計にしている）:
 #   - 検証対象ディレクトリ（validate.sh実行時の引数REPO_ROOT）は、テストフィクスチャ等
-#     CONTRIBUTING.md を持たない最小構成の場合がある（例: scripts/tests/fixtures/base/）。
+#     CONTRIBUTING.md を持たない最小構成の場合がある（例: .claude/scripts/tests/fixtures/base/）。
 #     CONTRIBUTING.md 側を正とする設計だと、フィクスチャごとに別途 CONTRIBUTING.md を
 #     用意しないと検証が成立しない、または「フィクスチャには存在しないので検証をスキップ
-#     する」という別分岐が必要になり、scripts/generate-show-org.sh の生成結果比較（実データの
+#     する」という別分岐が必要になり、.claude/scripts/generate-show-org.sh の生成結果比較（実データの
 #     整合性検証）とは性質が異なる単純な「定数との一致検証」にしては複雑になりすぎる。
 #   - 呼び出し元（本体リポジトリ）のCONTRIBUTING.mdを常に正とする設計も検討したが、その場合
 #     正典文言を変更するたびにCONTRIBUTING.md側も同時に更新しないと検証結果が意図せず変化し、
-#     かつテスト（scripts/tests/）が検証しているのは「あるべき文言との一致」ではなく
+#     かつテスト（.claude/scripts/tests/）が検証しているのは「あるべき文言との一致」ではなく
 #     「実行時点のCONTRIBUTING.mdとの一致」に変質してしまい、回帰テストとしての独立性
 #     （フィクスチャに注入した欠陥だけを検知する）が損なわれる。
-#   - scripts/validate.sh は既に ALLOWED_GROUPS（組織のグループ構成）・SECRET_PATTERN_*
+#   - .claude/scripts/validate.sh は既に ALLOWED_GROUPS（組織のグループ構成）・SECRET_PATTERN_*
 #     （検出パターン）など、他ドキュメントと重複しうる定義をスクリプト内定数として保持する
 #     方針を採っており、本件もその既存方針を踏襲する（CONTRIBUTING.md 1.5 は「正典からの
 #     コピー元」を人間の編集者向けに案内する文書であり、本ライブラリの読み取り元にはしない）。
@@ -196,7 +196,7 @@ PERMISSION_TRIGGER_LINE_FILES=(
 # sec-audit差し戻し M-s3: この運用規範が無検知のままだと CONTRIBUTING 1.4 原則4
 # 「検知手段のない規範は追加しない」と不整合になるため、静的部分検知（非リーダー
 # agents/*.md 本文にこれらのスキル呼び出しトークンが含まれていないか）を
-# scripts/validate.sh セクション9(i)へ追加する。本定数はその正典）。
+# .claude/scripts/validate.sh セクション9(i)へ追加する。本定数はその正典）。
 #
 # 設計判断（GUIDELINE_COMMON_LINES 等と同じ理由で本ライブラリの定数として保持する）:
 # トークンは `hw:` 接頭辞付きの完全表記のみとする。commands/*.md・skills/*/SKILL.md での
@@ -250,10 +250,10 @@ COMMANDS_URL_DELIMITER_FILES=(
 )
 
 # エージェントのリーダー判定（ファイル名 = frontmatter `name` 基準。mgmt-coordinator または
-# 末尾 `-lead` はリーダー）。scripts/validate.sh（TK-7・TK-2/E-1の対象判定、セクション9(b)(c)）と
-# scripts/sync-guidelines.sh（AGENTS_NON_LEADER 等、対象ファイルへの分配）が共有する判定ロジック
+# 末尾 `-lead` はリーダー）。.claude/scripts/validate.sh（TK-7・TK-2/E-1の対象判定、セクション9(b)(c)）と
+# .claude/scripts/sync-guidelines.sh（AGENTS_NON_LEADER 等、対象ファイルへの分配）が共有する判定ロジック
 # （2026-08-01案件T6で両スクリプトの重複実装を本関数へ集約。qa L-1 / sec L-2 対応）。
-# scripts/tests/ 側の回帰テストも本関数と同一の判定規則（mgmt-coordinator完全一致 or 末尾-lead）
+# .claude/scripts/tests/ 側の回帰テストも本関数と同一の判定規則（mgmt-coordinator完全一致 or 末尾-lead）
 # を前提にしている。
 #
 # 呼び出し側と同様、判定はファイル名（basename）で行う想定（frontmatter `name` の詐称による

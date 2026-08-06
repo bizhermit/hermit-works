@@ -15,10 +15,10 @@
 #   その作業自体をスクリプト化する方針を採った。
 #
 # 実行例:
-#   bash scripts/close-linked-issues.sh 62              # dry-run（既定。何も変更しない）
-#   bash scripts/close-linked-issues.sh 62 --apply      # 対象を表示し y/N 確認のうえクローズ
-#   bash scripts/close-linked-issues.sh 62 --apply --yes # 確認を省略（非対話実行時は必須）
-#   bash scripts/close-linked-issues.sh 62 --apply --yes --no-comment  # コメントを投稿しない
+#   bash .claude/scripts/close-linked-issues.sh 62              # dry-run（既定。何も変更しない）
+#   bash .claude/scripts/close-linked-issues.sh 62 --apply      # 対象を表示し y/N 確認のうえクローズ
+#   bash .claude/scripts/close-linked-issues.sh 62 --apply --yes # 確認を省略（非対話実行時は必須）
+#   bash .claude/scripts/close-linked-issues.sh 62 --apply --yes --no-comment  # コメントを投稿しない
 #
 # 前提: gh CLI が認証済みであること（gh auth status が通ること）。
 #
@@ -40,7 +40,7 @@
 #   本文からのキーワード抽出（正規表現・コードブロック/引用/インラインコードの除外）と、
 #   対象判定の分岐（未マージ・base 不一致・fork・PR 番号の誤参照・クローズ済み・件数上限）を
 #   含むため、CONTRIBUTING.md 8.4 の基準（分岐・正規表現・パース処理を含む）に該当する。
-#   回帰テストハーネスは scripts/tests/run-close-linked-issues-tests.sh に新設済み。
+#   回帰テストハーネスは .claude/scripts/tests/run-close-linked-issues-tests.sh に新設済み。
 #
 set -euo pipefail
 export LC_ALL=C
@@ -55,7 +55,7 @@ MAX_ISSUES=10
 # `--help | less` のようにヘルプを読む用途を壊さないため）。
 usage() {
   cat <<'USAGE'
-Usage: bash scripts/close-linked-issues.sh <PR番号> [--apply] [--yes] [--no-comment]
+Usage: bash .claude/scripts/close-linked-issues.sh <PR番号> [--apply] [--yes] [--no-comment]
 
   <PR番号>       develop へマージ済みの PR の番号
   --apply       実際にクローズする（既定は dry-run で表示のみ）
@@ -255,7 +255,7 @@ fi
 comment_body="$(printf '%s\n' \
   "本 issue に紐づく PR #${pr_number} を \`develop\` へマージしました（本リポジトリでは develop への統合をもって対応完了とみなします。リリース（main への反映）は別途 CONTRIBUTING.md 9.2 の手順で行います）。" \
   "" \
-  "このコメントは \`scripts/close-linked-issues.sh\` による定型投稿です。対応内容のサマリは別途記載します。")"
+  "このコメントは \`.claude/scripts/close-linked-issues.sh\` による定型投稿です。対応内容のサマリは別途記載します。")"
 
 echo
 echo "対象リポジトリ: ${repo}"

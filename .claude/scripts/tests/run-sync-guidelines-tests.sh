@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 #
-# scripts/sync-guidelines.sh の回帰テストハーネス。
+# .claude/scripts/sync-guidelines.sh の回帰テストハーネス。
 #
 # 方針:
-#   - 外部ランタイム非依存（bash + POSIX標準ツール + git のみ）。scripts/tests/run-tests.sh・
-#     scripts/tests/run-git-changelog-tests.sh と同じ方針を踏襲する。
-#   - アサーション・一時ディレクトリ管理・テスト集計は scripts/tests/lib/assertions.sh を
+#   - 外部ランタイム非依存（bash + POSIX標準ツール + git のみ）。.claude/scripts/tests/run-tests.sh・
+#     .claude/scripts/tests/run-git-changelog-tests.sh と同じ方針を踏襲する。
+#   - アサーション・一時ディレクトリ管理・テスト集計は .claude/scripts/tests/lib/assertions.sh を
 #     source して使う（ハーネスごとの再実装をしない。CONTRIBUTING 8.4）。
-#   - scripts/sync-guidelines.sh は「正典(lib)の git HEAD時点の値」と「作業ツリーの現在値」の
+#   - .claude/scripts/sync-guidelines.sh は「正典(lib)の git HEAD時点の値」と「作業ツリーの現在値」の
 #     差分を対象ファイルへ伝播する設計のため、フィクスチャは静的ファイルではなく「一時
-#     ディレクトリに scripts/tests/fixtures/base/ を複製したうえで git init し、1コミットを
+#     ディレクトリに .claude/scripts/tests/fixtures/base/ を複製したうえで git init し、1コミットを
 #     積んだ使い捨てリポジトリ」を作る（run-git-changelog-tests.sh の new_git_repo と同種の
 #     アプローチ）。
 #   - 「正典(lib)の現在値」は、sync-guidelines.sh が自身の SCRIPT_DIR から相対的に
-#     scripts/lib/guidelines.sh を source する設計（B-1。フィクスチャ独立）のため、必ず
+#     .claude/scripts/lib/guidelines.sh を source する設計（B-1。フィクスチャ独立）のため、必ず
 #     本リポジトリの実物の現在値になる。フィクスチャ側は「HEAD時点でコミットされている
 #     旧い値」だけを用意すればよい。本ハーネスは実物の現在値（GUIDELINE_DECISION_PROCEDURE_LINE）
 #     を実行時に読み取り、末尾にテスト用マーカーを付与した文字列を「旧文言」としてフィクスチャの
@@ -21,7 +21,7 @@
 #     （将来の文言変更に追従できる形で）差分を再現する。
 #
 # 実行方法:
-#   bash scripts/tests/run-sync-guidelines-tests.sh
+#   bash .claude/scripts/tests/run-sync-guidelines-tests.sh
 #
 # 終了コード: 全ケースPASSなら0、1件でもFAILがあれば1。
 #
@@ -29,9 +29,9 @@ set -uo pipefail
 # 注意: -e は使わない（他ハーネス同様、個々のテストケース内で非ゼロ終了を扱うため）。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SYNC_SH="$REPO_ROOT/scripts/sync-guidelines.sh"
-REAL_LIB_FILE="$REPO_ROOT/scripts/lib/guidelines.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+SYNC_SH="$REPO_ROOT/.claude/scripts/sync-guidelines.sh"
+REAL_LIB_FILE="$REPO_ROOT/.claude/scripts/lib/guidelines.sh"
 FIXTURE_BASE="$SCRIPT_DIR/fixtures/base"
 ASSERTIONS_LIB="$SCRIPT_DIR/lib/assertions.sh"
 
@@ -57,8 +57,8 @@ fi
 # lib へ切り出し済み（M16）。
 source "$ASSERTIONS_LIB"
 
-# 実物の正典(lib)から「現在値」を読み取る（scripts/tests/fixtures/base/ の agents/*.md は
-# この現在値を既に含んでいる前提。scripts/tests/run-tests.sh の正常系ケースが前提としている
+# 実物の正典(lib)から「現在値」を読み取る（.claude/scripts/tests/fixtures/base/ の agents/*.md は
+# この現在値を既に含んでいる前提。.claude/scripts/tests/run-tests.sh の正常系ケースが前提としている
 # ことと同じ）。
 source "$REAL_LIB_FILE"
 NEW_VAL="$GUIDELINE_DECISION_PROCEDURE_LINE"
@@ -90,24 +90,24 @@ new_case_dir() {
 }
 
 # 一時ディレクトリを git リポジトリ化し、現状を1コミットとして積む。
-# scripts/lib/guidelines.sh が存在する場合は 100755 を index へ明示する（validate.sh
+# .claude/scripts/lib/guidelines.sh が存在する場合は 100755 を index へ明示する（validate.sh
 # セクション11のファイルモード検査対応。core.fileMode=false環境ではchmodのみでは
 # git index上のモードが反映されないため、git update-index --chmod=+x を併用する）。
 git_commit_all() {
   local d="$1"
   git -C "$d" init -q
-  if [ -f "$d/scripts/lib/guidelines.sh" ]; then
-    chmod 755 "$d/scripts/lib/guidelines.sh"
+  if [ -f "$d/.claude/scripts/lib/guidelines.sh" ]; then
+    chmod 755 "$d/.claude/scripts/lib/guidelines.sh"
   fi
   git -C "$d" -c user.email='sync-test@example.com' -c user.name='sync-test' add -A
-  if git -C "$d" ls-files --error-unmatch scripts/lib/guidelines.sh >/dev/null 2>&1; then
-    git -C "$d" update-index --chmod=+x -- scripts/lib/guidelines.sh
+  if git -C "$d" ls-files --error-unmatch .claude/scripts/lib/guidelines.sh >/dev/null 2>&1; then
+    git -C "$d" update-index --chmod=+x -- .claude/scripts/lib/guidelines.sh
   fi
   git -C "$d" -c user.email='sync-test@example.com' -c user.name='sync-test' commit -q -m init >/dev/null
 }
 
 # 「HEAD時点で旧文言（OLD_VAL）がコミットされている」フィクスチャを作る:
-#   - scripts/lib/guidelines.sh は実物の現在の lib と同一の構成だが、
+#   - .claude/scripts/lib/guidelines.sh は実物の現在の lib と同一の構成だが、
 #     GUIDELINE_DECISION_PROCEDURE_LINE の値だけ OLD_VAL に置き換えたもの
 #   - agents/eng-backend.md・agents/qa-test.md は、実物の現在値(NEW_VAL)が既に
 #     埋め込まれているフィクスチャを OLD_VAL に置き換えたもの（＝「まだ同期前の状態」）
@@ -115,11 +115,11 @@ git_commit_all() {
 new_perturbed_git_case_dir() {
   new_case_dir
   local d="$NEW_CASE_DIR"
-  mkdir -p "$d/scripts/lib"
+  mkdir -p "$d/.claude/scripts/lib"
 
   local real_lib_content
   real_lib_content="$(cat "$REAL_LIB_FILE")"
-  printf '%s' "${real_lib_content//"$NEW_VAL"/"$OLD_VAL"}" > "$d/scripts/lib/guidelines.sh"
+  printf '%s' "${real_lib_content//"$NEW_VAL"/"$OLD_VAL"}" > "$d/.claude/scripts/lib/guidelines.sh"
 
   replace_in_file "$d/agents/eng-backend.md" "$NEW_VAL" "$OLD_VAL"
   replace_in_file "$d/agents/qa-test.md" "$NEW_VAL" "$OLD_VAL"
@@ -136,11 +136,11 @@ new_perturbed_git_case_dir() {
 new_mixed_already_migrated_case_dir() {
   new_case_dir
   local d="$NEW_CASE_DIR"
-  mkdir -p "$d/scripts/lib"
+  mkdir -p "$d/.claude/scripts/lib"
 
   local real_lib_content
   real_lib_content="$(cat "$REAL_LIB_FILE")"
-  printf '%s' "${real_lib_content//"$NEW_VAL"/"$OLD_VAL"}" > "$d/scripts/lib/guidelines.sh"
+  printf '%s' "${real_lib_content//"$NEW_VAL"/"$OLD_VAL"}" > "$d/.claude/scripts/lib/guidelines.sh"
 
   # agents/eng-backend.md は旧文言のまま（＝通常どおり更新される）。
   replace_in_file "$d/agents/eng-backend.md" "$NEW_VAL" "$OLD_VAL"
@@ -155,8 +155,8 @@ new_mixed_already_migrated_case_dir() {
 new_clean_git_case_dir() {
   new_case_dir
   local d="$NEW_CASE_DIR"
-  mkdir -p "$d/scripts/lib"
-  cp "$REAL_LIB_FILE" "$d/scripts/lib/guidelines.sh"
+  mkdir -p "$d/.claude/scripts/lib"
+  cp "$REAL_LIB_FILE" "$d/.claude/scripts/lib/guidelines.sh"
   git_commit_all "$d"
   NEW_CASE_DIR="$d"
 }
@@ -289,7 +289,7 @@ test_noop_when_lib_unchanged() {
 
 test_no_head_lib_exits_cleanly() {
   new_case_dir; local dir="$NEW_CASE_DIR"
-  # scripts/lib/ を用意しないまま（=lib非存在のまま）1コミットする。
+  # .claude/scripts/lib/ を用意しないまま（=lib非存在のまま）1コミットする。
   git_commit_all "$dir"
   run_sync "$dir"
   local ok=0

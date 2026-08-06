@@ -10,6 +10,7 @@
 ```
 hermit-works/
 ├── .claude/settings.json        # プロジェクトスコープ設定（マーケットプレイス登録＋プラグイン有効化）
+├── .claude/scripts/             # 静的検証・生成・git 補助スクリプトと回帰テスト（tests/。保守専用。1.10参照）
 ├── .claude-plugin/
 │   ├── plugin.json              # プラグインマニフェスト
 │   └── marketplace.json         # 配布元マニフェスト（自己参照）
@@ -20,7 +21,6 @@ hermit-works/
 ├── agents/                      # 専門家エージェント定義（51体、グループ別プレフィックス）
 ├── commands/                    # スラッシュコマンド（/hw: 名前空間で呼び出し）
 ├── skills/                      # 作業手順書スキル（hw: 名前空間）
-├── scripts/                     # 静的検証・生成・git 補助スクリプトと回帰テスト（tests/）
 ├── .hw/                         # 保守作業自体の成果物（利用者資材マップ・構成マップ・計画・報告等）
 ├── CLAUDE.md                    # 保守作業向けコンテキスト（一次受けの振り分け・検証必須の定め）
 ├── README.md                    # 利用者向けドキュメント
@@ -35,7 +35,7 @@ hermit-works/
 VSCode Dev Container（`.devcontainer/`）で開発します。コンテナには Claude Code CLI・gh 等が
 セットアップされ、`~/.claude`（認証情報・プラグイン設定）は Docker ボリューム `claude-config` に
 永続化されます。起動時チェック（git safe.directory 登録・gh/claude の認証状態確認）は
-`postStart.sh` が行います。マージ済みブランチの後始末（`scripts/git-cleanup-branch.sh`）は
+`postStart.sh` が行います。マージ済みブランチの後始末（`.claude/scripts/git-cleanup-branch.sh`）は
 `.vscode/tasks.json` に定義した VSCode タスクからも実行できます（既定 `develop`、入力欄で起点
 ブランチを上書き可。詳細は [CONTRIBUTING.md](CONTRIBUTING.md) 9.1）。
 
@@ -99,23 +99,23 @@ push/pull_request 時に CI（`.github/workflows/validate.yml`）でも自動実
 claude plugin validate .
 
 # 2. 静的検証スクリプト（検証内容は CONTRIBUTING.md 5章参照）
-bash scripts/validate.sh
+bash .claude/scripts/validate.sh
 
-# scripts/validate.sh 自体を変更した場合は回帰テストも実行（合格基準: 全ケース PASS）
-bash scripts/tests/run-tests.sh
+# .claude/scripts/validate.sh 自体を変更した場合は回帰テストも実行（合格基準: 全ケース PASS）
+bash .claude/scripts/tests/run-tests.sh
 
-# scripts/git-changelog.sh 変更時のみ
-bash scripts/tests/run-git-changelog-tests.sh
+# .claude/scripts/git-changelog.sh 変更時のみ
+bash .claude/scripts/tests/run-git-changelog-tests.sh
 
-# scripts/aggregate-agent-token-usage.sh 変更時のみ
-bash scripts/tests/run-aggregate-agent-token-usage-tests.sh
+# .claude/scripts/aggregate-agent-token-usage.sh 変更時のみ
+bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh
 
-# scripts/sync-guidelines.sh 変更時のみ
-bash scripts/tests/run-sync-guidelines-tests.sh
+# .claude/scripts/sync-guidelines.sh 変更時のみ
+bash .claude/scripts/tests/run-sync-guidelines-tests.sh
 
-# scripts/close-linked-issues.sh 変更時のみ
-bash scripts/tests/run-close-linked-issues-tests.sh
+# .claude/scripts/close-linked-issues.sh 変更時のみ
+bash .claude/scripts/tests/run-close-linked-issues-tests.sh
 
-# scripts/tests/lib/ 配下（全ハーネス共通ライブラリ）変更時は上記の全ハーネスを実行
+# .claude/scripts/tests/lib/ 配下（全ハーネス共通ライブラリ）変更時は上記の全ハーネスを実行
 # （詳細・合格基準・現行の一覧は CONTRIBUTING.md 5章）
 ```

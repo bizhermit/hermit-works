@@ -17,14 +17,14 @@
 #
 # 採用理由:
 #   - jq 等の追加ランタイムを導入せず bash + 標準ツール（find/grep/awk）のみで完結させる
-#     （CONTRIBUTING.md 8.3。JSONL は1行1オブジェクトのため、scripts/validate.sh の
+#     （CONTRIBUTING.md 8.3。JSONL は1行1オブジェクトのため、.claude/scripts/validate.sh の
 #     .claude-plugin/*.json 解析と同じ「行単位の正規表現照合」方針で対応できる）。
 #   - 二重計上対策: 実データ全数（本スクリプト作成時点の ~/.claude/projects 全体、
 #     usage行8000件超）を確認した結果、"iterations" キーはusageオブジェクト内で常に
 #     4フィールドより後方に出現していた。そのため「行内でのフィールド名の最初の出現」を
 #     採ればトップレベル値と一致する。この前提が崩れた場合の対処は下記 field_value() 直上の
 #     コメント、および値が丸ごと欠落した場合の扱いは MISSING_FIELD_COUNT 集計を参照
-#     （scripts/validate.sh 側の同種の割り切り［JSON専用パーサ不使用の代わりに前提を明記し
+#     （.claude/scripts/validate.sh 側の同種の割り切り［JSON専用パーサ不使用の代わりに前提を明記し
 #     複雑な実装は見送る］を踏襲）。この前提はスキーマで保証されたものではなく実データ観測に
 #     基づく経験則であり、崩れても静かに誤集計するだけで検知できないため、年次程度を目安に
 #     実データで前提が崩れていないか再確認すること（運用注記）。
@@ -37,12 +37,12 @@
 #     （meta.json の "description" 等）・秘密情報は一切読み取り・出力しない。
 #
 # 実行例:
-#   bash scripts/aggregate-agent-token-usage.sh
-#   bash scripts/aggregate-agent-token-usage.sh /path/to/.claude/projects   # 対象ディレクトリを明示指定（テスト等）
+#   bash .claude/scripts/aggregate-agent-token-usage.sh
+#   bash .claude/scripts/aggregate-agent-token-usage.sh /path/to/.claude/projects   # 対象ディレクトリを明示指定（テスト等）
 #
 # 回帰テストの要否（CONTRIBUTING 8.4）:
 #   本スクリプトは正規表現によるパース処理を含む（基準2に該当）ため回帰テストを新設する。
-#   ハーネス: scripts/tests/run-aggregate-agent-token-usage-tests.sh
+#   ハーネス: .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh
 #
 set -euo pipefail
 export LC_ALL=C

@@ -8,8 +8,8 @@
 # 都度の引数明示が手間だった。2026-08-02 に既定 develop へ変更）。
 #
 # 実行例:
-#   bash scripts/git-cleanup-branch.sh          # develop に切り替えて cleanup
-#   bash scripts/git-cleanup-branch.sh feature/x # feature/x に切り替えて cleanup
+#   bash .claude/scripts/git-cleanup-branch.sh          # develop に切り替えて cleanup
+#   bash .claude/scripts/git-cleanup-branch.sh feature/x # feature/x に切り替えて cleanup
 #   # VSCode からは .vscode/tasks.json 経由でも実行可能（既定 develop・入力欄で上書き可）
 #
 # 回帰テスト:
