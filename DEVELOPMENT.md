@@ -11,6 +11,7 @@
 hermit-works/
 ├── .claude/settings.json        # プロジェクトスコープ設定（マーケットプレイス登録＋プラグイン有効化）
 ├── .claude/scripts/             # 静的検証・生成・git 補助スクリプトと回帰テスト（tests/。保守専用。1.10参照）
+├── .claude/commands/            # 保守用ローカルコマンド（保守専用。`hw:` 名前空間に属さない。CONTRIBUTING 3.6参照）
 ├── .claude-plugin/
 │   ├── plugin.json              # プラグインマニフェスト
 │   └── marketplace.json         # 配布元マニフェスト（自己参照）

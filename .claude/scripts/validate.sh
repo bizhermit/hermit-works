@@ -4,9 +4,11 @@
 #
 # 検証内容:
 #   1. frontmatter 必須項目の欠落チェック
-#      - agents/*.md            : name, model, description
-#      - commands/*.md          : description
-#      - skills/<dir>/SKILL.md  : name, description
+#      - agents/*.md              : name, model, description
+#      - commands/*.md            : description
+#      - .claude/commands/*.md    : description（保守用ローカルコマンド。issue #72。
+#        配置規約は CONTRIBUTING 3.6。README一覧突合（セクション5）の対象外）
+#      - skills/<dir>/SKILL.md    : name, description
 #   2. agents の命名規則違反チェック
 #      - ファイル名と frontmatter の name が一致していること（大文字小文字を区別する完全一致）
 #      - name が "<group>-<role>" 形式であること
@@ -119,7 +121,8 @@
 #       セクション4のREADME一覧突合は表形式の一覧のみが対象で、通常の散文中の
 #       バッククォート付きパス参照は対象外だった）
 #       対象文書: README.md / CLAUDE.md / CONTRIBUTING.md / DESIGN.md /
-#       DEVELOPMENT.md / agents/*.md / commands/*.md / skills/*/SKILL.md。対象文書が
+#       DEVELOPMENT.md / agents/*.md / commands/*.md / skills/*/SKILL.md /
+#       .claude/commands/*.md（保守用ローカルコマンド。issue #72）。対象文書が
 #       存在しない検証対象ディレクトリ（テストフィクスチャ等）は、該当ファイルのみ
 #       静かにスキップし（セクション6・9(d)・10・11と同様）、対象文書が1件も
 #       存在しない場合は本セクション自体を静かにスキップする（エラーにはしない）。
@@ -626,6 +629,35 @@ for f in "${COMMAND_FILES[@]}"; do
   fi
   if ! fm_has_value 'description'; then
     add_issue 'ERROR' 'frontmatter-required' "commands/$(basename "$f")" \
+      "必須項目 'description' が欠落しています"
+  fi
+done
+
+# ---------------------------------------------------------------------------
+# 2b) .claude/commands/*.md（保守用ローカルコマンド）の frontmatter 必須項目検証
+#     （issue #72。配置規約は CONTRIBUTING 3.6。frontmatter description のみ必須。
+#      対象ディレクトリが存在しない検証対象（テストフィクスチャ等）は、他の
+#      「対象ファイルが存在しない検証対象ディレクトリ」系チェック（セクション6・
+#      9(d)等）と同様に静かにスキップする（ERRORにはしない。agents/ ディレクトリ
+#      不在チェックとは異なり、保守用ローカルコマンドは0件が正常状態でもあるため）。
+#      README一覧突合（セクション4・COMMAND_NAMES_FROM_FILES）には含めない
+#      （CONTRIBUTING 3.6: 保守用ローカルコマンドはREADME非更新のため）。
+# ---------------------------------------------------------------------------
+
+LOCAL_COMMANDS_DIR="$REPO_ROOT/.claude/commands"
+LOCAL_COMMAND_FILES=("$LOCAL_COMMANDS_DIR"/*.md)
+
+for f in "${LOCAL_COMMAND_FILES[@]}"; do
+  [ -f "$f" ] || continue
+  base_name="$(basename "$f")"
+
+  if ! parse_frontmatter "$f"; then
+    add_issue 'ERROR' 'frontmatter-missing' ".claude/commands/$base_name" \
+      'frontmatterブロックが見つかりません'
+    continue
+  fi
+  if ! fm_has_value 'description'; then
+    add_issue 'ERROR' 'frontmatter-required' ".claude/commands/$base_name" \
       "必須項目 'description' が欠落しています"
   fi
 done
@@ -1483,6 +1515,7 @@ DOC_PATH_REF_TARGET_GLOBS=(
   'agents/*.md'
   'commands/*.md'
   'skills/*/SKILL.md'
+  '.claude/commands/*.md'
 )
 
 # 除外(4): 実在検証の対象外として個別に許容する明示除外リスト（実在しなくてもERROR

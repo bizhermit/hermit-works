@@ -196,6 +196,88 @@ EOF
   return $ok
 }
 
+# ---- .claude/commands/*.md（保守用ローカルコマンド。issue #72。
+#      .claude/scripts/validate.sh セクション1(2b)・セクション12） -------------------
+
+test_local_command_description_missing() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 保守用ローカルコマンド（.claude/commands/*.md）も description 必須検証の
+  # 対象であること（CONTRIBUTING 3.6）。
+  mkdir -p "$dir/.claude/commands"
+  cat > "$dir/.claude/commands/maint-task.md" <<'EOF'
+---
+---
+
+保守用ローカルコマンドの本文（description欠落）。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "description欠落はexit 1" || ok=1
+  assert_contains 'frontmatter-required' "frontmatter-requiredカテゴリで検知" || ok=1
+  assert_contains ".claude/commands/maint-task.md" "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "'description' が欠落しています" "descriptionの欠落メッセージ" || ok=1
+  return $ok
+}
+
+test_local_command_path_ref_missing_detected() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 保守用ローカルコマンド内の文書内パス参照（セクション12）も実在検証の対象
+  # であること（issue #72。F4: .claude/commands/release.md からの
+  # .claude/scripts/git-changelog.sh 参照のような箇所を機械検証で守る）。
+  mkdir -p "$dir/.claude/commands"
+  cat > "$dir/.claude/commands/maint-task.md" <<'EOF'
+---
+description: 保守用ローカルコマンドのテスト。
+---
+
+詳細は `.claude/scripts/nonexistent-script.sh` を参照。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "非実在パス参照はexit 1" || ok=1
+  assert_contains 'doc-path-ref-missing' "doc-path-ref-missingカテゴリで検知" || ok=1
+  assert_contains ".claude/commands/maint-task.md" "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "'.claude/scripts/nonexistent-script.sh'" "非実在パスがメッセージに含まれる" || ok=1
+  return $ok
+}
+
+test_local_command_present_not_required_in_readme() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 保守用ローカルコマンドが実在し frontmatter も満たしていても、README一覧突合
+  # （readme-sync。セクション5）の対象には含まれないこと（CONTRIBUTING 3.6:
+  # 保守用ローカルコマンドはREADME非更新）。
+  mkdir -p "$dir/.claude/commands"
+  cat > "$dir/.claude/commands/maint-task.md" <<'EOF'
+---
+description: 保守用ローカルコマンドのテスト。
+---
+
+本文。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "有効な保守用ローカルコマンドはexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' "有効な保守用ローカルコマンドはERROR 0件" || ok=1
+  assert_not_contains 'readme-sync' "README一覧突合の対象に含まれない" || ok=1
+  return $ok
+}
+
+test_local_commands_dir_absent_still_passes() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # fixtures/base は .claude/commands/ を持たない（保守用ローカルコマンド0件が
+  # 正常状態）。ディレクトリ不在時に既存方針どおり静かにスキップされ、従来どおり
+  # PASSすることを明示的に固定する回帰ケース（issue #72 T2 完了条件）。
+  if [ -d "$dir/.claude/commands" ]; then
+    echo "前提エラー: fixtures/base に .claude/commands/ が存在します（本ケースの前提が崩れています）" >&2
+    return 1
+  fi
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 ".claude/commands不在は従来どおりexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' ".claude/commands不在は従来どおりERROR 0件" || ok=1
+  return $ok
+}
+
 # ---- 命名規則（agents） -------------------------------------------------------
 
 test_naming_mismatch() {
@@ -2880,6 +2962,10 @@ run_test test_frontmatter_required_missing
 run_test test_frontmatter_block_missing
 run_test test_frontmatter_key_uppercase_treated_as_missing
 run_test test_command_description_missing
+run_test test_local_command_description_missing
+run_test test_local_command_path_ref_missing_detected
+run_test test_local_command_present_not_required_in_readme
+run_test test_local_commands_dir_absent_still_passes
 run_test test_naming_mismatch
 run_test test_naming_format_violation
 run_test test_naming_duplicate_and_case_sensitivity
