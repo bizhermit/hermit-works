@@ -32,7 +32,7 @@ description: hermit-works リポジトリ自身のリリース作業（CONTRIBUT
      base とするため、その前に `develop` 自体の初回 push が必要になる旨を提示し、個別に確認を
      得てから実施する）。
 
-2. **変更一覧の作成**: `bash scripts/git-changelog.sh` を引数省略で実行し、前回リリース以降の変更
+2. **変更一覧の作成**: `bash .claude/scripts/git-changelog.sh` を引数省略で実行し、前回リリース以降の変更
    一覧を作る（スクリプト内部のフォールバックで直前タグ〜`HEAD`〔= develop の HEAD〕、タグが
    1つも無ければ全履歴が対象になる。`git describe` をここで別途実行して二重実装しない）。
 
@@ -41,8 +41,9 @@ description: hermit-works リポジトリ自身のリリース作業（CONTRIBUT
    直前タグがあれば `git diff --name-only <直前タグ>..HEAD`、無ければ（初回相当）
    `git diff --name-only $(git rev-list --max-parents=0 HEAD)..HEAD` で、直前タグから
    develop の現在の HEAD までを対象に変更ファイルを取得し、CONTRIBUTING 9.2 の利用者面（`agents/`・
-   `commands/`・`skills/`・`.claude-plugin/plugin.json`・`README.md`）／保守面（`scripts/`・
-   `.github/`・`CONTRIBUTING.md`・`DESIGN.md`・`DEVELOPMENT.md`・`CLAUDE.md`）の2区分に照らす。利用者面
+   `commands/`・`skills/`・`.claude-plugin/plugin.json`・`README.md`）／保守面（`.claude/`（保守用
+   スクリプト `.claude/scripts/` を含む）・`.github/`・`CONTRIBUTING.md`・`DESIGN.md`・
+   `DEVELOPMENT.md`・`CLAUDE.md`）の2区分に照らす。利用者面
    資材への変更が1件も無い場合は、「リリース発火なし（保守面のみのため次の利用者面リリースに同乗）」と
    対象コミット一覧つきで報告し、ここで終了する（version・CHANGELOG は更新しない。対象コミット
    自体は通常どおり develop 上に残り、次のリリース PR で main へ反映される点を明記する）。利用者面・

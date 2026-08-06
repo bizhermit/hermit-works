@@ -11,7 +11,7 @@ CONTRIBUTING.md・DESIGN.md は全文を読まず、冒頭目次で該当する�
 ## hermit-works への振り分け（一次受け）
 
 コマンド・スキル・エージェントの指定がないプロンプトは、内容を見て次のように扱う。
-本リポジトリは資材（プロンプト・文書）中心で構成され、保守用スクリプト（`scripts/`）と CI 定義（`.github/workflows/`）を除き実行コードを持たないため、README の文言例にある「コード変更」は「資材の変更」と読み替え、さらに README の「軽微な1ファイル修正」の項目（直接対応してよいとする例外枠）はここでは設けていない。
+本リポジトリは資材（プロンプト・文書）中心で構成され、保守用スクリプト（`.claude/scripts/`）と CI 定義（`.github/workflows/`）を除き実行コードを持たないため、README の文言例にある「コード変更」は「資材の変更」と読み替え、さらに README の「軽微な1ファイル修正」の項目（直接対応してよいとする例外枠）はここでは設けていない。
 
 - 資材（エージェント・コマンド・スキル・スクリプト・CI 定義・ドキュメント）の変更を伴う依頼 → 規模によらず（1ファイルの軽微な修正を含む）`/hw:request` のフローに準じて対応する。エージェント・コマンド・スキル・スクリプト・CLAUDE.md 等、振る舞いや設定を定義する文書は品質ゲート判定で常にレベル2以上（qa-review 必須）に、CI 定義（`.github/workflows/`）はレベル3（qa-review + sec-audit）に該当するため（README 等の読み物はフロー内の判定でレベル1相当となる。レベル定義の正本は `agents/mgmt-coordinator.md`「品質ゲートの適用判定」節）
 - 質問・相談・軽い調査 → 直接対応してよい。ただし専門的な分析を要する調査、複数工程にまたがる依頼は `/hw:request` に流す（README条件「複数プロジェクトにまたがる依頼」は、本リポジトリが単一プロジェクトのため該当しない）
@@ -33,17 +33,17 @@ CONTRIBUTING.md・DESIGN.md は全文を読まず、冒頭目次で該当する�
 
 ```bash
 claude plugin validate .
-bash scripts/validate.sh
-# scripts/validate.sh 自体を変更した場合のみ（合格基準: 全ケース PASS。正本は CONTRIBUTING.md 5章）
-bash scripts/tests/run-tests.sh
-# scripts/git-changelog.sh 変更時のみ
-bash scripts/tests/run-git-changelog-tests.sh
-# scripts/aggregate-agent-token-usage.sh 変更時のみ
-bash scripts/tests/run-aggregate-agent-token-usage-tests.sh
-# scripts/sync-guidelines.sh 変更時のみ
-bash scripts/tests/run-sync-guidelines-tests.sh
-# scripts/close-linked-issues.sh 変更時のみ
-bash scripts/tests/run-close-linked-issues-tests.sh
-# scripts/tests/lib/ 配下（全ハーネス共通ライブラリ）変更時は上記の全ハーネスを実行
+bash .claude/scripts/validate.sh
+# .claude/scripts/validate.sh 自体を変更した場合のみ（合格基準: 全ケース PASS。正本は CONTRIBUTING.md 5章）
+bash .claude/scripts/tests/run-tests.sh
+# .claude/scripts/git-changelog.sh 変更時のみ
+bash .claude/scripts/tests/run-git-changelog-tests.sh
+# .claude/scripts/aggregate-agent-token-usage.sh 変更時のみ
+bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh
+# .claude/scripts/sync-guidelines.sh 変更時のみ
+bash .claude/scripts/tests/run-sync-guidelines-tests.sh
+# .claude/scripts/close-linked-issues.sh 変更時のみ
+bash .claude/scripts/tests/run-close-linked-issues-tests.sh
+# .claude/scripts/tests/lib/ 配下（全ハーネス共通ライブラリ）変更時は上記の全ハーネスを実行
 # （詳細・合格基準・現行の一覧は正本 CONTRIBUTING.md 5章）
 ```

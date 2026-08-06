@@ -3,7 +3,7 @@
 このリポジトリは Claude Code 向けプラグイン「hermit-works」（プラグイン名 `hw`）の定義一式です。
 中身は `agents/*.md`（専門家エージェント定義）・`commands/*.md`（`/hw:` スラッシュコマンド定義）・
 `skills/<skill-name>/SKILL.md`（`hw:` 作業手順書スキル）の3種類と、それらを支える検証・生成スクリプト
-（`scripts/`。1.2・8章参照）、同じ検証を push/pull_request 時に自動実行する CI 定義
+（`.claude/scripts/`。1.2・8章参照）、同じ検証を push/pull_request 時に自動実行する CI 定義
 （`.github/workflows/`。8章参照）で構成されます。
 
 開発環境（devcontainer）やプラグインの読み込みの仕組みは [DEVELOPMENT.md](DEVELOPMENT.md) を
@@ -52,7 +52,7 @@
   - 8.1 適用範囲と1.2との役割分担
   - 8.2 配置・命名・ファイルモード
   - 8.3 スクリプトの実装方針
-  - 8.4 回帰テストの要否判断と `scripts/tests/` の構成
+  - 8.4 回帰テストの要否判断と `.claude/scripts/tests/` の構成
   - 8.5 CI 定義の変更手順
   - 8.6 索引・構成表の更新
   - 8.7 品質ゲートと完了条件
@@ -114,17 +114,17 @@
 
 | 作業の性質 | 実現手段 |
 |---|---|
-| 手順が固定で判断を含まない（検証・集計・整形・生成） | `scripts/` の bash スクリプト（`scripts/validate.sh` 方式。8章） |
+| 手順が固定で判断を含まない（検証・集計・整形・生成） | `.claude/scripts/` の bash スクリプト（`.claude/scripts/validate.sh` 方式。8章） |
 | 判断は要るが手順は定型で、対象や文脈が案件ごとに変わる | `skills/<skill-name>/SKILL.md`（4章） |
 | 利用者が明示的に起動する入口が必要 | `commands/<command-name>.md`（3章） |
 | 上記のいずれでも表現できず、専門的な判断そのものが価値 | エージェント（1.1・2章。1.1 の5項目をすべて満たす場合のみ） |
 
 既存エージェントの本文に定型手順を書き足したくなった場合も、まずスクリプト化を検討してください。
-スクリプト化した手順は、エージェント本文からは手順を再掲せず「`scripts/<name>.sh` を実行する」と
+スクリプト化した手順は、エージェント本文からは手順を再掲せず「`.claude/scripts/<name>.sh` を実行する」と
 参照させます。
 
-スクリプト（`scripts/`）・CI 定義（`.github/workflows/`）を選んだ場合の配置・命名・実装方針・完了条件は
-8章を参照してください。
+スクリプト（`.claude/scripts/`）・CI 定義（`.github/workflows/`）を選んだ場合の配置・命名・実装方針・
+完了条件は8章を参照してください。
 
 背景・理由は [DESIGN.md](DESIGN.md) 2.9 を参照してください。
 
@@ -157,10 +157,10 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 3. **予告と参照の掃き出し**: README「組織図」の該当行に非推奨である旨と吸収先を明記し、他エージェントの
    `## 連携`・`commands/`・`skills/` に残る当該名の参照を吸収先へ置換します。
    `grep -rn "<name>" agents commands skills README.md` で**残存参照がゼロ**になったことを確認します。
-   ただし `commands/show-org.md` は `scripts/generate-show-org.sh` の生成物のため手編集せず、
-   `bash scripts/generate-show-org.sh` を実行して再生成してください（手順4の削除時も同様です）。
+   ただし `commands/show-org.md` は `.claude/scripts/generate-show-org.sh` の生成物のため手編集せず、
+   `bash .claude/scripts/generate-show-org.sh` を実行して再生成してください（手順4の削除時も同様です）。
 4. **削除**: 残存参照ゼロを確認できてから `agents/<name>.md` を削除し、README の組織図・人数表記・
-   モデル割り当て表を更新し、`bash scripts/generate-show-org.sh` を実行して `commands/show-org.md` を
+   モデル割り当て表を更新し、`bash .claude/scripts/generate-show-org.sh` を実行して `commands/show-org.md` を
    再生成したうえで5章の確認手順を実行します。CHANGELOG には MAJOR の破壊的変更として、
    削除したエージェント名と移行先を記録します。
 
@@ -172,7 +172,7 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 （instruction dilution）。ガードレールを追加した結果、既存の規範（利用者資材優先の共通文等）まで
 薄まっては本末転倒のため、層①へ追記する前に以下を確認してください。
 
-1. 同じ効果が層②（`tools`/`disallowedTools`）または層④（`scripts/validate.sh`）で得られるなら、
+1. 同じ効果が層②（`tools`/`disallowedTools`）または層④（`.claude/scripts/validate.sh`）で得られるなら、
    そちらを優先する。層①は他レイヤーで代替できない場合の手段とする。
 2. 全エージェント共通のガードレールは各エージェントの `## 作業方針` に散らさず、既存の共通文
    （利用者資材優先の1段落＋短文6行。1.5参照）に集約する。**この共通ブロックは短文6行で予算を
@@ -197,7 +197,7 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 
 **配置基準（判定順）**: 新規の共通ルールをどの層・形式に置くか迷う場合は、次の判定順で決めてください。
 
-1. 機械層で代替可能か: 層②（`tools`/`disallowedTools`）または層④（`scripts/validate.sh`）で
+1. 機械層で代替可能か: 層②（`tools`/`disallowedTools`）または層④（`.claude/scripts/validate.sh`）で
    同じ効果が得られるなら、そちらを優先する（原則1の具体化）。
 2. 状況依存で対象エージェントを絞れるか: **トリガー行1行＋詳細スキル（`hw:permission-rules` 方式。
    DESIGN 2.27 追補）を標準の既定先とする**。層①側にはトリガー行1行のみを置き、詳細規則は
@@ -212,7 +212,7 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 (i) 実機検証: クリーン環境（汚染源のない模擬利用者リポジトリ・実サブエージェント委任）でスキルへの
     到達を確認する（2.3 節「ハード制約の導入は実機検証を採用条件とした理由」と同旨。前例は 2.27
     追補の permission-rules 検証）。
-(ii) `scripts/validate.sh` への逐語検証の追加: 原則4「検知手段のない規範は追加しない」を適用し、
+(ii) `.claude/scripts/validate.sh` への逐語検証の追加: 原則4「検知手段のない規範は追加しない」を適用し、
     トリガー行自体の欠落・改変を機械検証の対象にする。
 (iii) 対象エージェントの限定: 当該規範に関与する範囲のエージェントに絞り込み、無関係なエージェント
     への一般化は希釈（instruction dilution）を招くため避ける。
@@ -221,15 +221,15 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 
 `## 作業方針` 冒頭の共通ガードレール文（利用者資材優先の1段落＋短文6行）は、全 `agents/*.md`
 で**逐語一致**が必須です。新規エージェント追加時・既存エージェント編集時のいずれも、正典
-（`scripts/lib/guidelines.sh` の `GUIDELINE_COMMON_LINES` 定数、または既存の任意の
+（`.claude/scripts/lib/guidelines.sh` の `GUIDELINE_COMMON_LINES` 定数、または既存の任意の
 `agents/*.md`）からそのままコピーしてください。文言を独自に言い換えない・要約しない・省略しない
-でください。`scripts/validate.sh` は `scripts/lib/guidelines.sh` を source してこの逐語一致を
+でください。`.claude/scripts/validate.sh` は `.claude/scripts/lib/guidelines.sh` を source してこの逐語一致を
 検証し、欠落・改変は ERROR になります（正典＝lib・検証＝validate.sh の役割分担）。
 
-共通行の文言そのものを変更する場合は、(1) `scripts/lib/guidelines.sh` の該当定数を編集し、(2)
-`bash scripts/sync-guidelines.sh` を実行して対象ファイル群へ機械的に伝播させ、(3)
-`bash scripts/validate.sh` を実行して整合を確認してください（伝播＝sync。`scripts/sync-guidelines.sh`
-の対象分配は `scripts/validate.sh` の検証分配と同一です）。背景は [DESIGN.md](DESIGN.md) 2.30 を
+共通行の文言そのものを変更する場合は、(1) `.claude/scripts/lib/guidelines.sh` の該当定数を編集し、(2)
+`bash .claude/scripts/sync-guidelines.sh` を実行して対象ファイル群へ機械的に伝播させ、(3)
+`bash .claude/scripts/validate.sh` を実行して整合を確認してください（伝播＝sync。`.claude/scripts/sync-guidelines.sh`
+の対象分配は `.claude/scripts/validate.sh` の検証分配と同一です）。背景は [DESIGN.md](DESIGN.md) 2.30 を
 参照してください。
 
 ### 1.6 完了報告への証跡の明記（推奨）
@@ -268,14 +268,14 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 `## 作業方針` 末尾に置く「規約・命名・表記等の慣習的な判断（技術的トレードオフの裁定を除く）に迷った
 場合の段階的判断手順」を圧縮した1行は、`agents/mgmt-coordinator.md` を除く `agents/*.md` 全件
 （リーダー・非リーダー問わず）で**逐語一致**が必須です（1.5 の共通ガードレール文ブロック＝短文6行の
-予算とは別物の1行であり、6行の枠には含めません）。正典は `scripts/lib/guidelines.sh` の
+予算とは別物の1行であり、6行の枠には含めません）。正典は `.claude/scripts/lib/guidelines.sh` の
 `GUIDELINE_DECISION_PROCEDURE_LINE` 定数、または既存の任意の `agents/*.md`（`mgmt-coordinator.md`
 以外）です。文言を独自に言い換えない・要約しない・省略しないでください。`mgmt-coordinator` は自ら
 利用者に直接確認できる立場のため、この共通文をそのまま持たず独自の手順（`agents/mgmt-coordinator.md`
-「作業方針」参照）を記述します。`scripts/validate.sh` は `scripts/lib/guidelines.sh` を source して
+「作業方針」参照）を記述します。`.claude/scripts/validate.sh` は `.claude/scripts/lib/guidelines.sh` を source して
 この逐語一致を検証し、欠落・改変は ERROR になります。文言を変更する場合は
-`scripts/lib/guidelines.sh` の当該定数を編集し、`bash scripts/sync-guidelines.sh` で対象ファイルへ
-伝播したうえで、`scripts/validate.sh` 冒頭の検証内容一覧コメントも実態に合わせて更新してください
+`.claude/scripts/lib/guidelines.sh` の当該定数を編集し、`bash .claude/scripts/sync-guidelines.sh` で対象ファイルへ
+伝播したうえで、`.claude/scripts/validate.sh` 冒頭の検証内容一覧コメントも実態に合わせて更新してください
 （手順の詳細は1.5参照）。
 
 **別枠の共通行の新規追加は、この判断手順行をもって審査ゲートとします**（「6行予算の枠外」を口実にした
@@ -304,7 +304,7 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 - 降格候補の判定（常時層 → トリガー行＋スキル層、または機械層への降格。hooks 層③再評価のための
   材料収集を兼ねる）。降格を採用する場合、移行先の検知手段（1.4 のトリガー行新設要件(i)(ii)、
   または層②/④の実装）が実装・検証済みになるまで移行元の行を削除しない（検証の空白期間を作らない）。
-- 類似の非信頼入力宣言3種（`scripts/validate.sh` セクション9(d)・9(f)・9(g)）の統合可否。
+- 類似の非信頼入力宣言3種（`.claude/scripts/validate.sh` セクション9(d)・9(f)・9(g)）の統合可否。
 
 **実行主体**: 本節の棚卸しは本リポジトリの保守案件（CLAUDE.md の一次受け→ `/hw:request` フロー）
 として実施します。発動条件(ii)の「相乗り」は実施時期を既存の定期振り返りに合わせるという意味であり、
@@ -320,8 +320,16 @@ MAJOR の破壊的変更として記録し、吸収先を明記します（`CHAN
 
 本リポジトリの資材は、利用側リポジトリに配布されて動作する**製品**です。本リポジトリ自身を
 保守するための運用上の都合（例: 保守用の定期実行ジョブとの連携、保守者向けの報告内容の調整）を
-理由に、配布対象の資材（`agents/`・`commands/`・`skills/`・`scripts/`・`.github/workflows/`・
-README 等の利用者向け文書）を変更しないでください。
+理由に、配布対象の資材（`agents/`・`commands/`・`skills/`・`scripts/`〔将来、配布用のスクリプトを
+置く場合の予約パス。現在は使用実績なし。8.2参照〕・README 等の利用者向け文書）を変更しないで
+ください。
+
+配布対象と保守対象の判定基準は「配布されるか」ではなく、**利用側リポジトリで意味を持つか**です。
+本プラグインは `source: "./"` によりリポジトリ全体が物理的には配布されるため、配布されるという
+事実だけでは線を引けません。保守用スクリプト（`.claude/scripts/`）・CI 定義
+（`.github/workflows/`・`.github/dependabot.yml`）・保守作業専用文書等、本リポジトリ自身の保守に
+のみ意味を持つ資材は、利用側リポジトリへ渡っても解決しないパス・本リポジトリ固有の運用を前提と
+するため、配布対象から外れます。
 
 - 保守運用の仕組みは資材の外で完結させます。実現手段は、スケジュール実行（claude.ai の routines
   等）・gitignore 済みの `.hw/` 配下・GitHub の issue／ラベル等リポジトリ外のメタデータ・
@@ -332,6 +340,11 @@ README 等の利用者向け文書）を変更しないでください。
   資材の外で実現します（それでも迷う場合の確認先は1章冒頭と同じく docs-lead）。
 - 保守作業専用の文書（CLAUDE.md・CONTRIBUTING.md・DESIGN.md・DEVELOPMENT.md）は配布物ではない
   ため本節の禁止対象外ですが、変更は通常の資材変更と同じフロー（品質ゲート含む）に従います。
+- **配布側の資材（`agents/`・`commands/`・`skills/`・README 等）は、保守用スクリプト
+  （`.claude/scripts/` 配下の実体・内部の節番号・定数名等）を名指しで参照してはなりません。**
+  配布側の記述は、利用側リポジトリ単独で意味が通る表現に留めます。逆方向（保守作業側の文書・
+  `.claude/` 配下の資材から、配布側の資材や、将来設ける場合の配布用スクリプトを参照すること）は
+  差し支えありません。
 
 背景・経緯は [DESIGN.md](DESIGN.md) 2.33 を参照してください。
 
@@ -341,12 +354,14 @@ README 等の利用者向け文書）を変更しないでください。
 変わります（受付時の判定動作は CLAUDE.md「hermit-works への振り分け（一次受け）」節を参照）。
 
 - **プラグインのメンテナンス**: 利用側リポジトリに届いて動く製品、すなわち1.10 が列挙する配布
-  対象の資材（`agents/`・`commands/`・`skills/`・`scripts/`・`.github/workflows/`・README 等の
-  利用者向け文書）への変更を伴う依頼。
+  対象の資材（`agents/`・`commands/`・`skills/`・`scripts/`〔将来配布用スクリプトを置く場合の
+  予約パス〕・README 等の利用者向け文書）への変更を伴う依頼。
 - **リポジトリの環境整備**: 本リポジトリで作業を回すための仕組み（保守作業専用文書
-  〔CLAUDE.md・CONTRIBUTING.md・DESIGN.md・DEVELOPMENT.md〕・`.claude/`・`.hw/`・`.vscode/`・
-  `.devcontainer/` 等）を整える依頼。配布物ではないため1.10 の禁止対象外ですが、保守作業専用文書の
-  変更は1.10 が定めるとおり通常の資材変更と同じフロー（品質ゲート含む）に従います。
+  〔CLAUDE.md・CONTRIBUTING.md・DESIGN.md・DEVELOPMENT.md〕・`.claude/`〔保守用スクリプト
+  `.claude/scripts/` を含む〕・`.github/`〔`.github/workflows/`・`.github/dependabot.yml` を
+  含む〕・`.hw/`・`.vscode/`・`.devcontainer/` 等）を整える依頼。配布物ではないため1.10 の
+  禁止対象外ですが、保守作業専用文書の変更は1.10 が定めるとおり通常の資材変更と同じフロー
+  （品質ゲート含む）に従います。
 
 両者の扱いの違いは次のとおりです。
 
@@ -354,15 +369,16 @@ README 等の利用者向け文書）を変更しないでください。
   限り、書き込んでよいのは利用者一般に価値のある改善のみです。1.10 参照）。リポジトリの環境整備
   では、本リポジトリ固有の運用事情を書き込んで構いません。
 - **保守運用の都合を理由にした変更**: プラグインのメンテナンスでは1.10 の禁止対象です。リポジトリ
-  の環境整備が対象とする文書・ディレクトリ（保守作業専用文書・`.claude/`・`.hw/`・`.vscode/`・
-  `.devcontainer/` 等）は、いずれもこの制約を受けません。根拠系統は対象ごとに異なります。保守作業
-  専用文書は1.10 が「配布物ではないため本節の禁止対象外」と定める対象そのもの、`.hw/` は1.10 が
-  「資材の外で完結」の実現手段として明示する対象、`.claude/`・`.vscode/`・`.devcontainer/` は
-  1.10 の配布対象列挙に元々含まれず禁止の前提自体が成立しません。
+  の環境整備が対象とする文書・ディレクトリ（保守作業専用文書・`.claude/`・`.github/`・
+  `.hw/`・`.vscode/`・`.devcontainer/` 等）は、いずれもこの制約を受けません。根拠系統は対象ごとに
+  異なります。保守作業専用文書は1.10 が「配布物ではないため本節の禁止対象外」と定める対象そのもの、
+  `.hw/` は1.10 が「資材の外で完結」の実現手段として明示する対象、`.claude/`・`.github/`・
+  `.vscode/`・`.devcontainer/` は1.10 の配布対象列挙に元々含まれず禁止の前提自体が成立しません。
 - **CHANGELOG・version の対象可否**: 分類そのものではなく、9.2 が定める「利用者面資材／保守面
   資材」の区分が判定基準です（正本は9.2）。9.2 時点の目安では、利用者面資材（`agents/`・
-  `commands/`・`skills/`・`.claude-plugin/plugin.json`・README.md）は対象、それ以外（`scripts/`・
-  `.github/workflows/` を含む保守面資材、およびリポジトリの環境整備に属する変更）は対象外です。
+  `commands/`・`skills/`・`.claude-plugin/plugin.json`・README.md）は対象、それ以外（`.claude/`
+  〔保守用スクリプト `.claude/scripts/` を含む〕・`.github/` を含む保守面資材、およびリポジトリの
+  環境整備に属する変更）は対象外です。
 - **品質ゲート**: いずれの分類でも、変更内容に応じて `agents/mgmt-coordinator.md`「品質ゲートの
   適用判定」節のレベル判定に従います（正本は同節）。振る舞い・設定を定義する文書（エージェント・
   コマンド・スキル・CLAUDE.md 等）はレベル2以上、CI 定義はレベル3に該当する点は同節のとおりです。
@@ -375,7 +391,7 @@ README 等の利用者向け文書）を変更しないでください。
    リリース側（利用者面）として扱います。」と定めるのと同じ考え方で、プラグインのメンテナンス側を
    適用します（配布資材を含むことが明らかで判定に迷う余地がないため、確認は不要です）。
 3. 1.10・上記いずれの列挙にも該当しないパス（`.claude-plugin/`・`LICENSE`・`CHANGELOG.md`・
-   `.gitignore`・`.gitattributes`・`.editorconfig`・`.github/dependabot.yml` 等）のみの変更は、
+   `.gitignore`・`.gitattributes`・`.editorconfig` 等）のみの変更は、
    「この変更は利用側リポジトリに配布されて意味があるか」を基準に判定します。明らかな場合はその
    分類を根拠とともに採用してください。明らかでない場合は独断で決めず、まず1.10・1章冒頭と同じ
    確認先である docs-lead に確認します。それでも決まらない場合は、判断材料・選択肢・推奨案を
@@ -435,9 +451,9 @@ docs-lead の承認が必要です）。
 
 - 2.2 プレフィックス表（上表）への行追加
 - README「組織図」表への新グループ節追加
-- `bash scripts/generate-show-org.sh` の再実行（`commands/show-org.md` の再生成）
+- `bash .claude/scripts/generate-show-org.sh` の再実行（`commands/show-org.md` の再生成）
 - `## 出力` セクションの文言（2.4「出力セクションの文言」参照。新規グループは docs-lead に確認）
-- `scripts/validate.sh` の `ALLOWED_GROUPS` 定数への追加。エージェント名の書式検証
+- `.claude/scripts/validate.sh` の `ALLOWED_GROUPS` 定数への追加。エージェント名の書式検証
   `naming-format` が対象とする既定10種のグループリストであり、README一覧との突合チェック
   `readme-sync` とは別の検証です
 
@@ -546,11 +562,11 @@ description: <グループ名>グループの<役割名>として<担当業務�
 上記の三役審議（`strat-lead`・`qa-lead` の2ファイル逐語同期）と同種の運用が、他のファイル組でも
 採られています。`agents/sec-audit.md`・`agents/sec-appsec.md`・`agents/infra-devops.md` の
 permissions トリガー行（DESIGN 2.27参照）が該当します。三役審議の2ファイル同期とは異なり、
-こちらは `scripts/validate.sh` セクション9(h)（正典: `scripts/lib/guidelines.sh` の
+こちらは `.claude/scripts/validate.sh` セクション9(h)（正典: `.claude/scripts/lib/guidelines.sh` の
 `GUIDELINE_PERMISSION_TRIGGER_LINE` 定数）による逐語一致の静的検証を追加済みです（1.4 の
 トリガー行新設要件(ii)を適用し、当初の目視確認のみの運用から移行しました）。変更する場合は
-`scripts/lib/guidelines.sh` の当該定数を編集し、`bash scripts/sync-guidelines.sh` で3ファイルへ
-伝播したうえで、`bash scripts/validate.sh` で整合を確認してください（手順の詳細は1.5参照）。
+`.claude/scripts/lib/guidelines.sh` の当該定数を編集し、`bash .claude/scripts/sync-guidelines.sh` で3ファイルへ
+伝播したうえで、`bash .claude/scripts/validate.sh` で整合を確認してください（手順の詳細は1.5参照）。
 
 このトリガー行は「Claude Code の権限設定（`permissions`）を提案・変更・レビューする際は
 `hw:permission-rules` スキルを読み込む」旨を伝える1行のみで、詳細規則（Bash パターンマッチングの
@@ -574,7 +590,7 @@ DESIGN 2.27参照）。詳細規則を変更する場合はスキル側のみを
 - 『連携』に記載した**変更を伴う**依頼は、原則として自ら起動せず、完了報告の「引き継ぎ事項」に記載して呼び出し元の判断に委ねる。ただし次は自ら起動してよい: (a) 自グループの `*-lead` が自グループ内の担当へ委任する場合、(b) 作業設計5原則-5の評価ループおよび三役審議のための評価者・視点役の起動（グループ外を含む）、(c) 読み取り専用の調査補助。
 ```
 
-文言を独自に言い換えない・要約しないでください。`scripts/validate.sh` がこの文言の逐語一致を
+文言を独自に言い換えない・要約しないでください。`.claude/scripts/validate.sh` がこの文言の逐語一致を
 `agents/*.md` の非リーダー41体全件に対して検証します（欠落・改変は ERROR）。あわせて frontmatter に
 `disallowedTools: Agent` を追加してください（TK-2/E-1 委任制限文と `disallowedTools: Agent` はセットで
 初めて強制力を持ちます。既存 `disallowedTools` がある場合は配列に `Agent` を追加してマージします。
@@ -584,7 +600,7 @@ DESIGN 2.27参照）。詳細規則を変更する場合はスキル側のみを
 選び、その一覧に `Agent`/`Task` を含めない場合（例: `agents/qa-review.md` の
 `tools: [Read, Glob, Grep]`）は、`disallowedTools: Agent` の追加は不要です。許可リストに
 `Agent`/`Task` が無いこと自体で委任経路が塞がるため、`disallowedTools` を併記しても意味が重複します。
-TK-2/E-1 委任制限文（本節冒頭）は方式によらず全非リーダーで必須のままです。`scripts/validate.sh` は
+TK-2/E-1 委任制限文（本節冒頭）は方式によらず全非リーダーで必須のままです。`.claude/scripts/validate.sh` は
 `tools:` が1件以上指定され、かつ `Agent`/`Task` を含まないエージェントを `disallowedTools: Agent` の
 検査対象から除外します（`tools:` 未指定、または `tools:` に `Agent`/`Task` を含む場合は、
 `disallowedTools: Agent` の記載を通常どおり要求します）。
@@ -678,12 +694,12 @@ README「モデル割り当て」表を参照し、以下の判定条件で決�
 `README.md` の「組織図（エージェント一覧）」表の該当グループ行に、新規エージェント名を追記します。
 グループが `opus`/`haiku` 対象を含む場合は「モデル割り当て」表の該当セルも見直します。
 
-`commands/show-org.md` の再生成も必要です。この生成物は `scripts/generate-show-org.sh` が
+`commands/show-org.md` の再生成も必要です。この生成物は `.claude/scripts/generate-show-org.sh` が
 `agents/*.md` の frontmatter から機械生成するため、手編集はせず以下を実行してください
 （エージェントの削除・`description` 変更のみを行った場合も同様です）。
 
 ```bash
-bash scripts/generate-show-org.sh
+bash .claude/scripts/generate-show-org.sh
 ```
 
 ### 2.7 チェックリスト
@@ -700,12 +716,12 @@ bash scripts/generate-show-org.sh
 - [ ] 非リーダー新規エージェントは `disallowedTools: Agent` を追加した（既存 `disallowedTools` がある
       場合は配列にマージした。`mgmt-coordinator`・`*-lead` は対象外。ただし `tools:` 許可リストを選び、
       その一覧に `Agent`/`Task` を含まない場合は追加不要（`tools:` 未指定時は対象外としない）。
-      `scripts/validate.sh` もこの場合を検査対象外とする）
+      `.claude/scripts/validate.sh` もこの場合を検査対象外とする）
 - [ ] 非リーダー新規エージェントは `## 連携` 先頭に TK-2/E-1 委任制限文（逐語）を追加した
 - [ ] `## 出力` の文言が同グループの既存ファイルと一致している（新規に文言を考案していない）
 - [ ] README「組織図」表に追記した
 - [ ] README「モデル割り当て」表を必要に応じて見直した
-- [ ] `bash scripts/generate-show-org.sh` を実行した
+- [ ] `bash .claude/scripts/generate-show-org.sh` を実行した
 - [ ] 5章の検証手順を実行した
 
 ## 3. 新規コマンド追加手順
@@ -807,9 +823,9 @@ background: false
 - フォーク失敗時は呼び出し元が直接実行にフォールバックする旨（縮退の規範化）
 - 呼び出し元の共通ガードレール（1.5の逐語コピー等）に依存していたスキルは、フォーク先でその層が
   失われるため、該当文言を本文へ追加する（1.4原則4「検知手段のない規範は追加しない」に照らし、
-  必要なら `scripts/validate.sh` 側の検知手段も合わせて整備する）
+  必要なら `.claude/scripts/validate.sh` 側の検知手段も合わせて整備する）
 
-**運用規範（静的な部分検知あり。`scripts/validate.sh`。動的呼び出しは原理的に静的検知不可のため
+**運用規範（静的な部分検知あり。`.claude/scripts/validate.sh`。動的呼び出しは原理的に静的検知不可のため
 運用規範を併用）**:
 - `context: fork` スキルはメイン会話・リーダー層から呼びます。非リーダー、特に読み取り専用系
   （`tools:` 許可リスト型等）の呼び出し元から呼ぶと、フォーク先は呼び出し元のツールプールに束縛され
@@ -869,8 +885,9 @@ background: false
 ただし本ドキュメントが明示的に他所を正本と指定している規約は、その指定先が正本です（例: モデル
 割り当ての現時点の該当エージェントは README「モデル割り当て」表（2.5参照）、品質ゲートのレベル定義は
 `agents/mgmt-coordinator.md`「品質ゲートの適用判定」節、共通ガードレール文の正典は
-`scripts/lib/guidelines.sh` の `GUIDELINE_COMMON_LINES` 定数（1.5参照。検証は `scripts/validate.sh`、
-伝播は `scripts/sync-guidelines.sh` が担う。詳細は DESIGN 2.30 参照））。
+`.claude/scripts/lib/guidelines.sh` の `GUIDELINE_COMMON_LINES` 定数（1.5参照。検証は
+`.claude/scripts/validate.sh`、伝播は `.claude/scripts/sync-guidelines.sh` が担う。詳細は
+DESIGN 2.30 参照））。
 
 いずれの変更後も、以下の項目1・2は**必ず**実行し、対象スクリプトに回帰テストがある場合は該当するもの
 も実行して、エラー・警告があれば解消してから完了報告してください。
@@ -882,47 +899,51 @@ background: false
 
 2. 静的検証スクリプトの実行（必須）:
    ```bash
-   bash scripts/validate.sh
+   bash .claude/scripts/validate.sh
    ```
-   `scripts/validate.sh`（infra-devops整備）は、`agents/*.md`・`commands/*.md`・`skills/*/SKILL.md`
-   の frontmatter必須項目・命名規則・重複、README 記載のエージェント一覧・コマンド一覧・スキル一覧と
-   実ファイル構成の整合性、`commands/show-org.md` の生成差分、秘密情報混入チェック
-   （シークレットスキャン）、エージェント作業ガードレール（共通6短文・`disallowedTools`・
-   TK-2/E-1委任制限文の逐語一致）、数量表記整合、Markdown文書（README.md・CLAUDE.md・CONTRIBUTING.md・
-   DESIGN.md・DEVELOPMENT.md・`agents/*.md`・`commands/*.md`・`skills/*/SKILL.md`）中のバッククォート付き
-   リポジトリ内パス参照の実在検証（`.hw/` 配下・プレースホルダ・ワイルドカード〔glob展開で0件一致は
-   ERROR〕・利用者側資材の例示パス明示除外リストの4分類を除外し、各分類のスキップ件数を必ず出力。
-   対象文書全体からの抽出トークンが0件の場合も検証の空振りとしてERRORとする）を検証する bash
-   スクリプトです（devcontainer移行に伴い旧 `validate.ps1` から移行。追加ランタイム不要の方針は維持）。
+   `.claude/scripts/validate.sh`（infra-devops整備）は、`agents/*.md`・`commands/*.md`・
+   `skills/*/SKILL.md` の frontmatter必須項目・命名規則・重複、README 記載のエージェント一覧・
+   コマンド一覧・スキル一覧と実ファイル構成の整合性、`commands/show-org.md` の生成差分、秘密情報
+   混入チェック（シークレットスキャン）、エージェント作業ガードレール（共通6短文・
+   `disallowedTools`・TK-2/E-1委任制限文の逐語一致）、数量表記整合、Markdown文書（README.md・
+   CLAUDE.md・CONTRIBUTING.md・DESIGN.md・DEVELOPMENT.md・`agents/*.md`・`commands/*.md`・
+   `skills/*/SKILL.md`）中のバッククォート付きリポジトリ内パス参照の実在検証（`.hw/` 配下・
+   プレースホルダ・ワイルドカード〔glob展開で0件一致はERROR〕・利用者側資材の例示パス明示除外
+   リストの4分類を除外し、各分類のスキップ件数を必ず出力。対象文書全体からの抽出トークンが0件の
+   場合も検証の空振りとしてERRORとする）を検証する bash スクリプトです（devcontainer移行に伴い旧
+   `validate.ps1` から移行。追加ランタイム不要の方針は維持）。
 
    文書中で利用者側資材の例示パス（本リポジトリ内には実在しないことを承知のうえでの例示。例:
-   `.github/copilot-instructions.md`）を新たに記載する場合は、`scripts/validate.sh` セクション12の
-   `DOC_PATH_REF_EXCLUDE_LIST` へ当該パスを追加してください（追加しないと存在しないパスとして
-   ERRORになります）。
+   `.github/copilot-instructions.md`）を新たに記載する場合は、`.claude/scripts/validate.sh`
+   セクション12の `DOC_PATH_REF_EXCLUDE_LIST` へ当該パスを追加してください（追加しないと存在
+   しないパスとしてERRORになります）。
 
    README の「使い方」「スキル」表の見出しを変更する場合は、`commands/help.md` の実行時抽出（見出し
    アンカー）も併せて確認してください。
 
-   `scripts/validate.sh` 自体の回帰テスト（`scripts/tests/run-tests.sh`、qa-test整備）は
-   `bash scripts/tests/run-tests.sh` で実行できます。`scripts/validate.sh` を変更した場合は、
-   完了報告前に必ずこちらも実行し、全ケースPASSであることを確認してください。
+   `.claude/scripts/validate.sh` 自体の回帰テスト（`.claude/scripts/tests/run-tests.sh`、
+   qa-test整備）は `bash .claude/scripts/tests/run-tests.sh` で実行できます。
+   `.claude/scripts/validate.sh` を変更した場合は、完了報告前に必ずこちらも実行し、全ケースPASS
+   であることを確認してください。
 
-   同様に、`scripts/git-changelog.sh` を変更した場合は `bash scripts/tests/run-git-changelog-tests.sh`
-   （qa-test整備）を、`scripts/aggregate-agent-token-usage.sh` を変更した場合は
-   `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`（qa-test整備）を、
-   `scripts/sync-guidelines.sh` を変更した場合は `bash scripts/tests/run-sync-guidelines-tests.sh`
-   （infra-devops整備）を、`scripts/close-linked-issues.sh` を変更した場合は
-   `bash scripts/tests/run-close-linked-issues-tests.sh`（infra-devops整備）を実行し、
-   全ケースPASSであることを確認してください。回帰テストが共有する
-   共通ライブラリ（`scripts/tests/lib/` 配下）を変更した場合は、影響が lib/ を共有する全ハーネスに
+   同様に、`.claude/scripts/git-changelog.sh` を変更した場合は
+   `bash .claude/scripts/tests/run-git-changelog-tests.sh`（qa-test整備）を、
+   `.claude/scripts/aggregate-agent-token-usage.sh` を変更した場合は
+   `bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh`（qa-test整備）を、
+   `.claude/scripts/sync-guidelines.sh` を変更した場合は
+   `bash .claude/scripts/tests/run-sync-guidelines-tests.sh`（infra-devops整備）を、
+   `.claude/scripts/close-linked-issues.sh` を変更した場合は
+   `bash .claude/scripts/tests/run-close-linked-issues-tests.sh`（infra-devops整備）を実行し、
+   全ケースPASSであることを確認してください。回帰テストが共有する共通ライブラリ
+   （`.claude/scripts/tests/lib/` 配下）を変更した場合は、影響が lib/ を共有する全ハーネスに
    及ぶため、以下の全ハーネスを実行し、全ケースPASSであることを確認してください（新たなハーネスを
    追加した場合は、本リストと8.4の該当箇所を同時に更新してください）。
 
-   - `bash scripts/tests/run-tests.sh`
-   - `bash scripts/tests/run-git-changelog-tests.sh`
-   - `bash scripts/tests/run-aggregate-agent-token-usage-tests.sh`
-   - `bash scripts/tests/run-sync-guidelines-tests.sh`
-   - `bash scripts/tests/run-close-linked-issues-tests.sh`
+   - `bash .claude/scripts/tests/run-tests.sh`
+   - `bash .claude/scripts/tests/run-git-changelog-tests.sh`
+   - `bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh`
+   - `bash .claude/scripts/tests/run-sync-guidelines-tests.sh`
+   - `bash .claude/scripts/tests/run-close-linked-issues-tests.sh`
 
    回帰テストを新設すべきかの判断基準と配置は8.4を参照してください。
 
@@ -981,8 +1002,9 @@ background: false
 
 ### 8.1 適用範囲と1.2との役割分担
 
-本章の対象は `scripts/` 直下・`scripts/tests/`・`scripts/tests/lib/`・`scripts/tests/fixtures/`・
-`.github/workflows/`・`.github/dependabot.yml` です。1.2 は定型作業をどの実現手段（スクリプト・skill・コマンド・エージェント）
+本章の対象は `.claude/scripts/` 直下・`.claude/scripts/lib/`・`.claude/scripts/tests/`・
+`.claude/scripts/tests/lib/`・`.claude/scripts/tests/fixtures/`・`.github/workflows/`・
+`.github/dependabot.yml` です。1.2 は定型作業をどの実現手段（スクリプト・skill・コマンド・エージェント）
 で解決するかを選ぶための判断基準であり、本章はスクリプト・CI 定義を選んだ後の追加・変更手順です。
 他の実現手段を選んだ場合の手順は、skill なら4章、コマンドなら3章、エージェントなら1.1・2章を参照して
 ください。
@@ -991,18 +1013,20 @@ background: false
 
 | 配置 | 用途 |
 |---|---|
-| `scripts/<name>.sh` | 単体で完結する検証・生成・git 補助スクリプト本体 |
-| `scripts/tests/run-<対象>-tests.sh` | 対応するスクリプトの回帰テストハーネス |
-| `scripts/tests/lib/` | 複数のハーネスが共有するアサーション等の共通ライブラリ |
-| `scripts/tests/fixtures/` | 回帰テストが読み込む入力データ・期待値等の固定データ |
+| `.claude/scripts/<name>.sh` | 単体で完結する検証・生成・git 補助スクリプト本体 |
+| `.claude/scripts/lib/` | 複数のスクリプト本体が共有するライブラリ（例: 共通ガードレール文の定数を持つ `guidelines.sh`。1.5参照） |
+| `.claude/scripts/tests/run-<対象>-tests.sh` | 対応するスクリプトの回帰テストハーネス |
+| `.claude/scripts/tests/lib/` | 複数のハーネスが共有するアサーション等の共通ライブラリ |
+| `.claude/scripts/tests/fixtures/` | 回帰テストが読み込む入力データ・期待値等の固定データ |
 | `.github/workflows/<name>.yml` | CI ワークフロー定義 |
 | `.github/dependabot.yml` | GitHub Actions の依存関係（バージョン）更新設定 |
+| `scripts/<name>.sh` | 将来、配布用のスクリプトを置く場合の予約パス（1.10参照）。現在は使用実績なし |
 
 命名は kebab-case に `.sh` を付けた「動詞-目的語」形式を基本とします（例:
 `generate-show-org.sh`）。git を操作するスクリプトは `git-` 接頭辞を付けます（例:
 `git-changelog.sh`・`git-cleanup-branch.sh`）。テストハーネスは `run-<対象>-tests.sh` とします
-（`scripts/tests/run-tests.sh` は `validate.sh` の回帰テストという最初期からの既存名を維持する例外
-です）。
+（`.claude/scripts/tests/run-tests.sh` は `validate.sh` の回帰テストという最初期からの既存名を
+維持する例外です）。
 
 ファイルモードは `.sh` が `100755`（実行可能）、`.yml` が `100644` です。判定は git index 上の
 モード（`git ls-files -s` 等で確認）とします。呼び出しは `bash <path>` を正とし、実行可能ビットの
@@ -1010,7 +1034,7 @@ background: false
 
 ### 8.3 スクリプトの実装方針
 
-スクリプト化する場合は `scripts/validate.sh` 方式を標準とし、以下をすべて満たします。
+スクリプト化する場合は `.claude/scripts/validate.sh` 方式を標準とし、以下をすべて満たします。
 
 - 追加ランタイムを要求せず bash のみで動くこと
 - ローカルでも CI でも同じ1コマンドで実行できること
@@ -1022,9 +1046,9 @@ background: false
 - 環境依存の挙動差を避けるため `LC_ALL=C` を設定すること
 - リポジトリルートは第1引数で受け取り、省略時は自動解決すること
 - 秘密情報を出力しないこと（値そのものに限らず、値を含みうる変数のダンプ等も避けます）
-- `scripts/validate.sh` 冒頭の検証内容一覧コメントは、検証項目の増減と同一コミットで更新すること
+- `.claude/scripts/validate.sh` 冒頭の検証内容一覧コメントは、検証項目の増減と同一コミットで更新すること
 
-### 8.4 回帰テストの要否判断と `scripts/tests/` の構成
+### 8.4 回帰テストの要否判断と `.claude/scripts/tests/` の構成
 
 新設したスクリプトに回帰テストを設けるかどうかは、以下のいずれかに該当するかで判断します。
 
@@ -1035,16 +1059,16 @@ background: false
   振る舞うリスクがある）
 
 いずれにも該当せず回帰テストを新設しない場合は、その理由をスクリプト冒頭のコメントに明記してください
-（`scripts/git-cleanup-branch.sh` が該当例です）。
+（`.claude/scripts/git-cleanup-branch.sh` が該当例です）。
 
 回帰テストを新設する場合は以下に従います。
 
 - ハーネス名は `run-<対象>-tests.sh` とする（8.2参照）
-- アサーション等の共通処理は `scripts/tests/lib/` を `source` して使い、ハーネスごとに再実装しない
-- `scripts/tests/lib/` 配下の変更は影響が lib/ を共有する全ハーネスに及ぶため、5章に列挙された
+- アサーション等の共通処理は `.claude/scripts/tests/lib/` を `source` して使い、ハーネスごとに再実装しない
+- `.claude/scripts/tests/lib/` 配下の変更は影響が lib/ を共有する全ハーネスに及ぶため、5章に列挙された
   全ハーネスを実行して確認する（現行のハーネス一覧・合格基準は5章参照。ハーネス追加時は5章の
   一覧も同時に更新する）
-- テスト用の入力データ・期待値等の固定データは `scripts/tests/fixtures/` に置く
+- テスト用の入力データ・期待値等の固定データは `.claude/scripts/tests/fixtures/` に置く
 - 合格基準は全ケース PASS とする（正本は5章）
 
 ### 8.5 CI 定義の変更手順
@@ -1080,8 +1104,8 @@ CI 定義は以下の方針に従います。
 「品質ゲートの適用判定」節です。完了条件は5章の確認手順を満たすことです。
 
 ### 8.8 チェックリスト
-- [ ] 対象が本章の適用範囲（`scripts/` 直下・`tests/`・`tests/lib/`・`tests/fixtures/`・
-      `.github/workflows/`・`.github/dependabot.yml`）に該当することを確認した
+- [ ] 対象が本章の適用範囲（`.claude/scripts/` 直下・`lib/`・`tests/`・`tests/lib/`・
+      `tests/fixtures/`・`.github/workflows/`・`.github/dependabot.yml`）に該当することを確認した
 - [ ] 他の実現手段（skill/コマンド/エージェント）で代替できないことを1.2に沿って検討した
 - [ ] 配置先が8.2の配置表に沿っている
 - [ ] ファイル名が命名規則（kebab-case+.sh、動詞-目的語、git操作系は`git-`接頭辞、テストハーネスは
@@ -1128,7 +1152,7 @@ CI 定義は以下の方針に従います。
   [DESIGN.md](DESIGN.md) 1.3参照）。
 - 作業ブランチの PR は **`develop` 向け**（`gh pr create --base develop` 等で base を明示）と
   し、**squash マージ**（または事前に1コミットへ整えたうえでのマージ）とします（従来どおりの
-  規約です）。コミット件名は Conventional Commits に準拠させます。`scripts/git-changelog.sh` は
+  規約です）。コミット件名は Conventional Commits に準拠させます。`.claude/scripts/git-changelog.sh` は
   件名の `<type>: ` 記法で変更を種別分類するため、規約に沿わない件名（例: 素のマージコミット
   メッセージ）は「その他」に分類され、リリース時の変更一覧作成で埋もれてしまいます。
 - `develop` から `main` への統合は、squash マージではなく 9.2 が定めるリリース手順（develop→main
@@ -1136,7 +1160,7 @@ CI 定義は以下の方針に従います。
 - 複数ブランチが並行し、後からマージする側は、マージ前に `develop` を取り込み（`rebase` 推奨）、
   5章の検証手順を再実行してからマージしてください。
 - `commands/show-org.md` はスクリプト生成物（1.3・2.6参照）のため、競合が起きても手動マージで
-  解消せず、`bash scripts/generate-show-org.sh` を実行して再生成してください。
+  解消せず、`bash .claude/scripts/generate-show-org.sh` を実行して再生成してください。
 - `develop` 向け PR のマージ時には、`.github/workflows/delete-merged-branch.yml` がリモートの
   作業ブランチを自動削除します（対象は `develop` を base とするマージ済み PR の head ブランチ
   のみ。main・develop 自体と fork のブランチは削除しません）。
@@ -1144,7 +1168,7 @@ CI 定義は以下の方針に従います。
   PR が既定ブランチ（`main`）を対象とする場合にのみ解釈され、`develop` 向け PR では無視されて
   リンクも作成されないためです（GitHub 公式ドキュメント「Linking a pull request to an issue」。
   この仕様のため CI による自動クローズも成立しません。判断記録は `.hw/decisions.md` 2026-08-05 行）。
-  案件完了時は `bash scripts/close-linked-issues.sh <PR番号>` で対象を確認し、
+  案件完了時は `bash .claude/scripts/close-linked-issues.sh <PR番号>` で対象を確認し、
   `--apply` を付けて実行してクローズします（既定は dry-run。`--apply` は実行前に y/N 確認を求め、
   **AI エージェントの実行を含む非対話環境では `--yes` の併用が必須**です〔未指定なら何も操作せず
   中止します〕。`--yes` はプロンプトに応答できない実行環境のための指定であり、**利用者の承認を
@@ -1157,11 +1181,11 @@ CI 定義は以下の方針に従います。
   インラインコード内の記述、他リポジトリ参照、PR 番号への参照は対象外です）。**issue の一部しか
   対応しない PR では `Closes` ではなく `Refs #<n>` 等**（クローズを伴わない参照）を使ってください。
   対応内容のサマリコメントは、スクリプトが投稿する定型コメントとは別に従来どおり投稿します。
-- マージ済みブランチの後始末には `bash scripts/git-cleanup-branch.sh [<起点ブランチ名>]` を
+- マージ済みブランチの後始末には `bash .claude/scripts/git-cleanup-branch.sh [<起点ブランチ名>]` を
   使います。作業ブランチの起点は `develop` であるため、**引数省略時の既定は `develop`**
-  です（`bash scripts/git-cleanup-branch.sh` のみで `develop` 起点の掃除ができます）。
+  です（`bash .claude/scripts/git-cleanup-branch.sh` のみで `develop` 起点の掃除ができます）。
   `main` 等 `develop` 以外を起点にしたい場合のみ第1引数で明示してください
-  （`bash scripts/git-cleanup-branch.sh main`）。VSCode からは `.vscode/tasks.json` 経由
+  （`bash .claude/scripts/git-cleanup-branch.sh main`）。VSCode からは `.vscode/tasks.json` 経由
   でも実行でき、入力欄（既定値 `develop`）でブランチ名を上書きできます。指定した起点
   ブランチを最新化したうえで、リモート追跡がなくなった（上記ワークフローによる自動削除、
   またはマージ済みで削除済み）ローカルブランチを一括削除します。
@@ -1195,17 +1219,23 @@ CI 定義は以下の方針に従います。
 - **リリース発火基準**: CHANGELOG に書く価値のあるまとまりができた区切りで実施しますが、実施の
   要否はまず変更が及ぶ資材の面で判定します。**利用者面資材（`agents/`・`commands/`・`skills/`・
   `.claude-plugin/plugin.json`・`README.md`）に変更が及ぶ場合に限りリリース（バージョン更新）を
-  発火**します。保守面資材（`scripts/`・`.github/`・`CONTRIBUTING.md`・`DESIGN.md`・
-  `DEVELOPMENT.md`・`CLAUDE.md`）のみの変更はリリースの契機とせず、次に利用者面資材が変更される
-  リリースへ同乗させます。「バージョンアップ不要」は「リリース発火なし」を意味するのみで、当該
-  コミット自体は通常どおり `develop` へマージされる点に注意してください。利用者面・保守面が
-  混在する変更は、リリース側（利用者面）として扱います。判定対象範囲は**直前タグから `develop`
-  の HEAD まで**です（判定はリリース準備コミット作成前の `develop` の HEAD に対して行います）。
+  発火**します。保守面資材（`.claude/`〔保守用スクリプト `.claude/scripts/` を含む〕・`.github/`・
+  `CONTRIBUTING.md`・`DESIGN.md`・`DEVELOPMENT.md`・`CLAUDE.md`）のみの変更はリリースの契機とせず、
+  次に利用者面資材が変更されるリリースへ同乗させます。「バージョンアップ不要」は「リリース発火
+  なし」を意味するのみで、当該コミット自体は通常どおり `develop` へマージされる点に注意してください。
+  利用者面・保守面が混在する変更は、リリース側（利用者面）として扱います。判定対象範囲は**直前
+  タグから `develop` の HEAD まで**です（判定はリリース準備コミット作成前の `develop` の HEAD に
+  対して行います）。この利用者面／保守面の区分は、1.10 の配布対象／1.11 の2分類と同一の基準
+  （利用側リポジトリで意味を持つか）に基づいています。ただし列挙の粒度は本節の目的（リリース発火の
+  要否判定）に応じて異なり、完全一致ではありません。`.hw/` は gitignore 済みでコミットに現れないため
+  本節の列挙対象に含めていません。`.vscode/`・`.devcontainer/` は本節の保守面資材リストには明示
+  列挙していませんが、下記フォールバック規定により実質的に同じ扱い（該当なし＝保守面扱いが既定）
+  になるため、1.11 との判定結果は一致します。
 - **フォールバック規定**: 利用者面・保守面のいずれのリストにも該当しないパス（`LICENSE`・
-  `.gitignore`・`.devcontainer/` 等）のみの変更は、保守面扱い（リリース発火なし）を既定とします。
-  ただし利用者への配布内容・利用条件に実質的な影響が及ぶ場合（例: LICENSE のライセンス種別変更）や
-  判定に迷う場合は、リリース側（発火）に倒します（バージョン種別判定の「迷えば重い側」と同じ
-  考え方です）。
+  `.gitignore`・`.vscode/`・`.devcontainer/` 等）のみの変更は、保守面扱い（リリース発火なし）を
+  既定とします。ただし利用者への配布内容・利用条件に実質的な影響が及ぶ場合（例: LICENSE のライセンス
+  種別変更）や判定に迷う場合は、リリース側（発火）に倒します（バージョン種別判定の「迷えば重い側」と
+  同じ考え方です）。
 - **バージョン種別の判定**: semver の考え方・改訂の背景は [DESIGN.md](DESIGN.md) 2.10・2.31 を
   参照してください。判定基準そのものは本節（9.2）が正本です。本リポジトリでは次を目安とします。
   - MAJOR: 呼び出しインターフェースを破壊する変更（エージェント/スキル/コマンドの削除・改名、
@@ -1217,7 +1247,7 @@ CI 定義は以下の方針に従います。
     テストとして、「CHANGELOG に利用者向けの行として書くべき内容があるか」を MINOR/PATCH の
     代理指標として用いてください（該当すれば MINOR 側、しなければ PATCH 側という目安であり、
     機械的な決定手続きではありません）。
-- **変更一覧の作成**: `develop` 上で `bash scripts/git-changelog.sh <前回タグ> HEAD` を実行して
+- **変更一覧の作成**: `develop` 上で `bash .claude/scripts/git-changelog.sh <前回タグ> HEAD` を実行して
   作成します（引数省略時は直前タグから HEAD までを対象にし、タグが1つも無ければ全履歴を対象に
   します）。`CHANGELOG.md` 自体の新規作成は初回リリース時に行います（1.3の記載と整合します）。
 - **リリース手順**: 利用者の明示的な指示を起点に、次の順で進めます。
@@ -1236,8 +1266,8 @@ CI 定義は以下の方針に従います。
      タグ `v<version>` を**`develop` 側のリリース準備コミット（マージコミットの第2親）に**自動
      付与し、push する。リリース PR はマージコミット方式でマージするため、このコミットはマージ後
      `develop`・`main` 双方の履歴上の祖先になり、back-merge（`main` から `develop` への打刻用の
-     取り込み）を別途行う必要がありません。両ブランチで `scripts/git-changelog.sh` の直前タグ検出
-     が同一のコミットを指し、一致します。
+     取り込み）を別途行う必要がありません。両ブランチで `.claude/scripts/git-changelog.sh` の
+     直前タグ検出が同一のコミットを指し、一致します。
   6. 利用者/AI は、CI（`tag-release.yml`）の実行結果とタグ `v<version>` の作成をもって完了を
      確認する（確認の具体手順は `.claude/commands/release.md` に委譲する）。CI が失敗した場合
      （squash／rebase 検知・タグ衝突等）は原因を確認し、解消したうえで従来の手動手順（マージ方式を
@@ -1247,7 +1277,7 @@ CI 定義は以下の方針に従います。
   異なる新規コミットが `main` 上に生成されるため、(a) `develop` と `main` の履歴が同一内容でも
   食い違う（**履歴乖離**）、(b) 次回以降のリリース PR で内容が同一のはずの変更が差分として
   検出され解消不要なコンフリクトが生じる（**偽コンフリクト**）、(c) タグが指す `develop` 側の
-  コミットが `main` の履歴上の祖先にならず、`git describe`・`scripts/git-changelog.sh` の
+  コミットが `main` の履歴上の祖先にならず、`git describe`・`.claude/scripts/git-changelog.sh` の
   直前タグ検出が `develop`・`main` の間で食い違う（**タグ検出破綻**）、という3つの問題を招く
   ためです（裁定 2026-08-02）。
 - 本プラグインは GitHub パス配布（マーケットプレイス非公開）のため、`main` は常に動く状態を
@@ -1271,13 +1301,13 @@ CI 定義は以下の方針に従います。
 - [ ] 作業ブランチの PR は `--base develop` を明示して作成し、`develop` へのマージは squash
       （または1コミットに整えたうえで）とし、件名が Conventional Commits に準拠している
 - [ ] 後発マージの場合、`develop` を取り込み（rebase 推奨）5章の検証を再実行してからマージした
-- [ ] `commands/show-org.md` の競合は手マージせず `scripts/generate-show-org.sh` で再生成した
+- [ ] `commands/show-org.md` の競合は手マージせず `.claude/scripts/generate-show-org.sh` で再生成した
 - [ ] PR 本文で issue を参照する場合、全対応なら `Closes #<n>`、部分対応なら `Refs #<n>` 等を
       使い分けた（9.1参照）
-- [ ] 案件完了時に `bash scripts/close-linked-issues.sh <PR番号>` で対象を確認し、
+- [ ] 案件完了時に `bash .claude/scripts/close-linked-issues.sh <PR番号>` で対象を確認し、
       `--apply`（非対話環境では `--apply --yes`）でクローズした（自動クローズは GitHub 仕様上
       働きません。マージ後は速やかに実行します。9.1参照）
-- [ ] マージ済みブランチは `bash scripts/git-cleanup-branch.sh`（既定 `develop`。VSCode タスクからも可）で後始末した
+- [ ] マージ済みブランチは `bash .claude/scripts/git-cleanup-branch.sh`（既定 `develop`。VSCode タスクからも可）で後始末した
 - [ ] version・CHANGELOG の更新は作業ブランチと分離し、`release/v<version>` ブランチ上でリリース
       準備コミットとして一括実施し、`develop` 向け PR（リリース準備 PR）で統合した
 - [ ] リリース PR（`develop`→`main`）は squash マージせず、マージコミット方式で利用者本人が

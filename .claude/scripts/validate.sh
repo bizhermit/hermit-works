@@ -22,7 +22,7 @@
 #   （6は B8 対応でチェック自体を撤去。旧: agents/mgmt-coordinator.md の
 #      「組織構成（振り分け先）」表との整合性チェック。組織図の正は
 #      README.md / commands/show-org.md の2箇所に整理。欠番は振り直さない）
-#   7. commands/show-org.md と、scripts/generate-show-org.sh の生成結果との差分チェック
+#   7. commands/show-org.md と、.claude/scripts/generate-show-org.sh の生成結果との差分チェック
 #      （show-org.md は本来 agents/*.md の frontmatter から機械的に再生成すべき内容であり、
 #      手書きで乖離していないかを検出する。生成スクリプト自体の実行失敗もERRORとする）
 #   8. 秘密情報混入チェック（シークレットスキャン）
@@ -32,10 +32,10 @@
 #      常時実施する必須ゲート（sec-lead方針）として、人手（目視）チェックを機械チェックに
 #      置き換えるもの。
 #   9. エージェント作業ガードレール（第1弾1-2・第2弾2-1）の機械検証
-#      正典（GUIDELINE_* 定数・対象ファイルリスト）は scripts/lib/guidelines.sh。本スクリプトは
+#      正典（GUIDELINE_* 定数・対象ファイルリスト）は .claude/scripts/lib/guidelines.sh。本スクリプトは
 #      それを source して検証のみを行う（2026-08-01案件B。DESIGN.md 2.30参照）。
 #      (a) 共通ガードレール6短文（SEC-12/PI-6/AI-2統合。利用者資材優先の共通文の直後に
-#          挿入される短文6行。正典: scripts/lib/guidelines.sh の GUIDELINE_COMMON_LINES 定数）が、
+#          挿入される短文6行。正典: .claude/scripts/lib/guidelines.sh の GUIDELINE_COMMON_LINES 定数）が、
 #          agents/*.md 全件で当該共通文の直後に連続6行としてバイト同一で存在するかを検証する
 #          （欠落・改変・位置ずれ・分断はいずれもERROR）。
 #      (b) 非リーダー（ファイル名が mgmt-coordinator と不一致、かつ末尾が -lead でない）
@@ -48,18 +48,18 @@
 #      (d) 利用者資材を直接読む commands/skills 固定5ファイル（skills/conventions/SKILL.md・
 #          skills/repo-map/SKILL.md・commands/optimize-assets.md・commands/audit-assets.md・
 #          commands/draft-docs.md）に、
-#          注入耐性文言（正典: scripts/lib/guidelines.sh の GUIDELINE_INJECTION_NOTE_LINE 定数。P-4a/P-4b
+#          注入耐性文言（正典: .claude/scripts/lib/guidelines.sh の GUIDELINE_INJECTION_NOTE_LINE 定数。P-4a/P-4b
 #          対応）が逐語存在するかを検証する（欠落はERROR。前後文脈・行位置には依存しない
 #          存在検証）。対象ファイルが存在しない検証対象ディレクトリ（テストフィクスチャ等）は
 #          セクション6・10(b)と同様にERRORにはせず静かにスキップする。
-#      (e) 判断手順共通文言（正典: scripts/lib/guidelines.sh の GUIDELINE_DECISION_PROCEDURE_LINE 定数。
+#      (e) 判断手順共通文言（正典: .claude/scripts/lib/guidelines.sh の GUIDELINE_DECISION_PROCEDURE_LINE 定数。
 #          「判断に迷った場合の段階的判断手順」案件T1で作業方針節へ挿入された1行）が、
 #          agents/mgmt-coordinator.md を除く agents/*.md 全件（リーダー・非リーダー問わず）に
 #          逐語存在するかを検証する（欠落はERROR。前後文脈・行位置には依存しない存在検証。
 #          mgmt-coordinator.md は別文言のため対象外）。
 #      (f) tracker連携スキル固定2ファイル（skills/tracker-setup/SKILL.md・
 #          skills/tracker-sync/SKILL.md。TRACKER_SKILLS_EXTERNAL_INPUT_FILES）に、外部
-#          トラッカー由来の非信頼入力宣言（正典: scripts/lib/guidelines.sh の GUIDELINE_EXTERNAL_INPUT_NOTE_LINE
+#          トラッカー由来の非信頼入力宣言（正典: .claude/scripts/lib/guidelines.sh の GUIDELINE_EXTERNAL_INPUT_NOTE_LINE
 #          定数。両ファイルに逐語同一で存在する1文。外部進捗管理ツール連携 7.10 f1対応）が
 #          逐語存在するかを検証する（欠落はERROR。(d)と同様、前後文脈・行位置に依存しない
 #          存在検証で、対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする）。
@@ -67,20 +67,20 @@
 #          データ宣言文言（正典: GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_BLOCK 定数）が逐語存在
 #          するかも検証する（欠落はERROR。同ファイル不在時は静かにスキップする）。
 #      (g) skills/import-assets/SKILL.md 固定1ファイル（IMPORT_ASSETS_UNTRUSTED_INPUT_FILES）に、
-#          zip 同梱資産由来の非信頼入力宣言（正典: scripts/lib/guidelines.sh の
+#          zip 同梱資産由来の非信頼入力宣言（正典: .claude/scripts/lib/guidelines.sh の
 #          GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_LINE 定数。AI資産の横展開（エクスポート／
 #          インポート）案件 qa-review High-1・CONTRIBUTING 1.4 原則4対応）が逐語存在するかを
 #          検証する（欠落はERROR。(d)(f)と同様、前後文脈・行位置に依存しない存在検証で、
 #          対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする）。
 #      (h) permission-rules トリガー行固定3ファイル（agents/sec-audit.md・
 #          agents/sec-appsec.md・agents/infra-devops.md。PERMISSION_TRIGGER_LINE_FILES）に、
-#          `hw:permission-rules` スキル参照トリガー行（正典: scripts/lib/guidelines.sh の
+#          `hw:permission-rules` スキル参照トリガー行（正典: .claude/scripts/lib/guidelines.sh の
 #          GUIDELINE_PERMISSION_TRIGGER_LINE 定数。DESIGN 2.27 追補・CONTRIBUTING 1.4
 #          原則4「検知手段のない規範は追加しない」対応）が逐語存在するかを検証する
 #          （欠落はERROR。(d)(f)(g)と同様、前後文脈・行位置に依存しない存在検証で、
 #          対象ファイルが存在しない検証対象ディレクトリでは静かにスキップする）。
 #      (i) 非リーダー（is_leader_agent_name が偽）の agents/*.md 本文に、context: fork
-#          スキル呼び出しトークン（正典: scripts/lib/guidelines.sh の FORK_SKILL_CALL_TOKENS
+#          スキル呼び出しトークン（正典: .claude/scripts/lib/guidelines.sh の FORK_SKILL_CALL_TOKENS
 #          定数＝`hw:repo-map`・`hw:conventions`。CONTRIBUTING 4.2 運用規範「fork スキルは
 #          メイン会話・リーダー層から呼ぶ」対応。2026-08-03案件issue28 sec-audit差し戻し
 #          M-s3・CONTRIBUTING 1.4 原則4「検知手段のない規範は追加しない」対応）が部分文字列
@@ -89,7 +89,7 @@
 #          これらのスキルを実際に呼び出す定型手順を持つため（正当な呼び出し）検査対象に
 #          含めない）。
 #      (j) commands/*.md 固定12ファイル（COMMANDS_URL_DELIMITER_FILES）に、URL区切り規約行
-#          （正典: scripts/lib/guidelines.sh の GUIDELINE_URL_DELIMITER_LINE 定数。
+#          （正典: .claude/scripts/lib/guidelines.sh の GUIDELINE_URL_DELIMITER_LINE 定数。
 #          2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応。統括が
 #          PR報告で URL を `**` 強調＋全角括弧で挟みリンク不能にした事象への再発防止）が
 #          逐語存在するかを検証する（欠落はERROR。(d)(f)(g)(h)と同様、前後文脈・行位置に
@@ -107,7 +107,7 @@
 #          異なるため対象外（誤検知しない）。
 #   11. スクリプト・CI定義のファイルモード検査（CONTRIBUTING 8.2 の機械化。
 #       トークン消費効率改善 第2弾T3）
-#       対象範囲は CONTRIBUTING 8.1 と同一（scripts/ 配下全体・.github/workflows/ 配下・
+#       対象範囲は CONTRIBUTING 8.1 と同一（.claude/scripts/ 配下全体・.github/workflows/ 配下・
 #       .github/dependabot.yml）。この範囲内の git index 上のファイルモード
 #       （`git ls-files -s` で確認できる値）が、`.sh` は 100755、それ以外（.yml・
 #       fixtures配下のデータファイル等）は 100644 であることを検証する（ERROR）。
@@ -124,7 +124,7 @@
 #       静かにスキップし（セクション6・9(d)・10・11と同様）、対象文書が1件も
 #       存在しない場合は本セクション自体を静かにスキップする（エラーにはしない）。
 #       検出: バッククォートで囲まれた文字列を空白区切りの単語に分割し、先頭が
-#       agents/ commands/ skills/ scripts/ .github/ .claude-plugin/ .hw/ のいずれかで
+#       agents/ commands/ skills/ scripts/ .claude/ .github/ .claude-plugin/ .hw/ のいずれかで
 #       始まり、末尾が .md/.sh/.json/.yml/.yaml のいずれかで終わる単語を
 #       「リポジトリ内パス形トークン」として抽出する（実行例のような複数語の
 #       バッククォート内でも、パス部分のみを単語として正しく拾う）。不在はERROR。
@@ -133,10 +133,11 @@
 #         (2) `<` または `…` を含む（プレースホルダ）
 #         (3) `*` を含む（ワイルドカード。REPO_ROOT基準でglob展開し1件以上実在すれば
 #             PASS、0件はERROR）
-#         (4) 利用者側資材の例示パス明示除外リスト（現状 .github/copilot-instructions.md
-#             のみ。commands/optimize-assets.md・skills/conventions/SKILL.md が他AI
-#             ツール向け資材の例として挙げているだけで、本リポジトリ内には実在しない
-#             ことを承知のうえでの例示のため）
+#         (4) 実在検証の対象外として個別に許容する明示除外リスト（.github/copilot-instructions.md
+#             は commands/optimize-assets.md・skills/conventions/SKILL.md が他AIツール向け
+#             資材の例として挙げているだけで本リポジトリ内には実在しないことを承知のうえでの
+#             例示。.claude/settings.local.json は .gitignore 済みで実在しないファイルへの
+#             言及があるため）
 #       対象文書全体（存在するファイルのみ）から抽出条件に一致するトークンが1件も
 #       取れなかった場合もERRORとする（検出パターンの変化等による検証の静かな空振り
 #       検知。セクション4のREADME抽出0件チェックと同思想）。
@@ -164,8 +165,8 @@
 #   実装する（jq/yq/python 等の追加ランタイムは導入しない）。
 #
 # 実行例:
-#   bash scripts/validate.sh
-#   bash scripts/validate.sh /path/to/repo-root
+#   bash .claude/scripts/validate.sh
+#   bash .claude/scripts/validate.sh /path/to/repo-root
 #
 set -euo pipefail
 
@@ -190,7 +191,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 REPO_ROOT="${1:-}"
 if [ -z "$REPO_ROOT" ]; then
-  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+  REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 fi
 
 shopt -s nullglob
@@ -205,9 +206,9 @@ ALLOWED_GROUPS_ALT="${ALLOWED_GROUPS// /|}"
 AGENT_NAME_PATTERN="^(${ALLOWED_GROUPS_ALT})-[a-z0-9]+\$"
 
 # エージェント作業ガードレールの逐語検証用文言・対象ファイルリスト定数（GUIDELINE_* および
-# COMMANDS_SKILLS_INJECTION_FILES 等）は、正典 scripts/lib/guidelines.sh へ移設した
+# COMMANDS_SKILLS_INJECTION_FILES 等）は、正典 .claude/scripts/lib/guidelines.sh へ移設した
 # （2026-08-01案件B。DESIGN.md 2.30参照）。SCRIPT_DIR 相対で source する（REPO_ROOT 相対に
-# しない理由は scripts/lib/guidelines.sh 内の設計判断コメント参照。フィクスチャ独立性・
+# しない理由は .claude/scripts/lib/guidelines.sh 内の設計判断コメント参照。フィクスチャ独立性・
 # テスト独立性の本旨は lib 切り出し後も維持している）。
 source "$SCRIPT_DIR/lib/guidelines.sh"
 
@@ -386,9 +387,9 @@ extract_frontmatter_list_field() {
 
 # ファイル名（agents/<name>.md の <name> 部分）がリーダー職（mgmt-coordinator または
 # 末尾が -lead）かどうかを判定する。TK-7の対象外判定（リーダーは委任行為自体が業務のため
-# disallowedTools への Agent 追加を要求しない）に使う。scripts/tests/ の判定規則
+# disallowedTools への Agent 追加を要求しない）に使う。.claude/scripts/tests/ の判定規則
 # （末尾 -lead / mgmt-coordinator 一致）と同一にする。
-# is_leader_agent_name は scripts/lib/guidelines.sh（正典）で定義され、source 済み
+# is_leader_agent_name は .claude/scripts/lib/guidelines.sh（正典）で定義され、source 済み
 # （2026-08-01案件T6で自前実装を撤去し集約。CONTRIBUTING.md 1.5・1.8参照）。
 
 # README.md の指定見出し（正規表現、行頭からの部分一致）直後にある Markdown テーブル
@@ -702,8 +703,11 @@ else
   fi
 
   # 注意: 以下の見出しアンカー（'^##[[:space:]]*使い方' / '^##[[:space:]]*スキル'）
-  # および `/hw:…`・`hw:…` トークン形式は commands/help.md の実行時抽出も同一の
-  # 前提に依存しているため、変更する際は help.md 側も併せて確認すること。
+  # および `/hw:…`・`hw:…` トークン形式は commands/help.md 手順1（README走査）の実行時抽出も
+  # 同一の前提に依存している（両者は独立に同じ見出しへ依存しているだけで、一方が他方を
+  # 参照する関係ではない）。README.md の当該見出し文言を変更する場合は、本セクションだけでなく
+  # commands/help.md 側の追従も必要になるため、変更する際は help.md 側も併せて確認すること
+  # （issue #71 で help.md 側の本チェックへの名指し言及は削除したが、結合自体はここに残る）。
   README_COMMAND_TOKENS=()
   while IFS= read -r t; do
     [ -z "$t" ] && continue
@@ -782,7 +786,7 @@ fi
 # 欠番は振り直さない）。
 
 # ---------------------------------------------------------------------------
-# 6) commands/show-org.md と scripts/generate-show-org.sh の生成結果との差分チェック
+# 6) commands/show-org.md と .claude/scripts/generate-show-org.sh の生成結果との差分チェック
 #
 # commands/show-org.md のうち組織図部分は、本来 agents/*.md の frontmatter から
 # 機械的に再生成できる（generate-show-org.sh）。手書きの実ファイルが生成結果と
@@ -790,7 +794,7 @@ fi
 #
 # 生成スクリプトは REPO_ROOT 側（検証対象。テスト用フィクスチャ等の場合もある）ではなく、
 # このバリデータ自身と同じディレクトリ（SCRIPT_DIR）から解決する。フィクスチャ等
-# 検証対象ディレクトリには scripts/ 一式が存在しない場合があるため。
+# 検証対象ディレクトリにはスクリプト一式（`.claude/scripts/` 相当）が存在しない場合があるため。
 # ---------------------------------------------------------------------------
 
 SHOW_ORG_PATH="$REPO_ROOT/commands/show-org.md"
@@ -799,16 +803,16 @@ GENERATE_SHOW_ORG_SH="$SCRIPT_DIR/generate-show-org.sh"
 SHOW_ORG_DIFF_STATUS='-'
 
 # 注意: commands/show-org.md が存在しない場合も、本チェックより前からある最小テスト
-# フィクスチャ（scripts/tests/fixtures/base/）等、意図的に一部のファイルしか持たない
+# フィクスチャ（.claude/scripts/tests/fixtures/base/）等、意図的に一部のファイルしか持たない
 # 検証対象ディレクトリでの誤検知を避けるため、ERRORにはせず静かにスキップする。一方
-# scripts/generate-show-org.sh は SCRIPT_DIR（このバリデータ自身のディレクトリ）から
+# .claude/scripts/generate-show-org.sh は SCRIPT_DIR（このバリデータ自身のディレクトリ）から
 # 解決するため、検証対象ディレクトリの構成に関わらず常に存在するはずのファイルであり、
 # こちらが見つからない場合は通常どおりERRORとする。
 if [ ! -f "$SHOW_ORG_PATH" ]; then
   :
 elif [ ! -f "$GENERATE_SHOW_ORG_SH" ]; then
-  add_issue 'ERROR' 'show-org-generate-missing' 'scripts/generate-show-org.sh' \
-    "scripts/generate-show-org.sh が見つかりません: $GENERATE_SHOW_ORG_SH"
+  add_issue 'ERROR' 'show-org-generate-missing' '.claude/scripts/generate-show-org.sh' \
+    ".claude/scripts/generate-show-org.sh が見つかりません: $GENERATE_SHOW_ORG_SH"
 else
   SHOW_ORG_TMP="$(mktemp)"
   # sec-audit/qa-review検出(L7)への対応: 割込み（Ctrl-C等）でスクリプトが中断した場合、
@@ -823,11 +827,11 @@ else
     else
       SHOW_ORG_DIFF_STATUS='差分あり'
       add_issue 'ERROR' 'show-org-drift' 'commands/show-org.md' \
-        "生成スクリプト（scripts/generate-show-org.sh）の出力と実ファイルに差分があります（確認: bash scripts/generate-show-org.sh $REPO_ROOT /tmp/show-org-check.md && diff -u commands/show-org.md /tmp/show-org-check.md）"
+        "生成スクリプト（.claude/scripts/generate-show-org.sh）の出力と実ファイルに差分があります（確認: bash .claude/scripts/generate-show-org.sh $REPO_ROOT /tmp/show-org-check.md && diff -u commands/show-org.md /tmp/show-org-check.md）"
     fi
   else
     SHOW_ORG_DIFF_STATUS='生成失敗'
-    add_issue 'ERROR' 'show-org-generate-failed' 'scripts/generate-show-org.sh' \
+    add_issue 'ERROR' 'show-org-generate-failed' '.claude/scripts/generate-show-org.sh' \
       "生成スクリプトの実行に失敗しました: ${GENERATE_STDERR}"
   fi
   rm -f "$SHOW_ORG_TMP"
@@ -849,18 +853,18 @@ fi
 #     し、.git 配下のみ除外する（この場合は追跡状態を区別する概念自体がないため、
 #     存在する全ファイルが対象になる）。
 #   - 以下の既知ファイルは明示的に対象外とする（ディレクトリ丸ごとの除外ではなく、
-#     個々のファイルパスを列挙する。scripts/tests/ 配下を丸ごと除外すると、
-#     scripts/tests/fixtures/ 等が将来汚染された場合に検知できなくなるため）。
-#       - scripts/tests/run-tests.sh              : 本チェックの回帰テスト自身が、検出対象
+#     個々のファイルパスを列挙する。.claude/scripts/tests/ 配下を丸ごと除外すると、
+#     .claude/scripts/tests/fixtures/ 等が将来汚染された場合に検知できなくなるため）。
+#       - .claude/scripts/tests/run-tests.sh              : 本チェックの回帰テスト自身が、検出対象
 #         パターンの実例をハーネスのソースコードに直接埋め込むため（除外しないと、本チェックが
 #         自分自身のテストコードを「本物の漏えい」として誤検知し続けてしまう）。
-#       - scripts/tests/run-git-changelog-tests.sh: 同様の理由で除外対象とする既知のテスト
+#       - .claude/scripts/tests/run-git-changelog-tests.sh: 同様の理由で除外対象とする既知のテスト
 #         ハーネスファイル（他の回帰テストスイート）。
-#       - scripts/tests/run-aggregate-agent-token-usage-tests.sh: 現状このファイルに秘密情報
+#       - .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh: 現状このファイルに秘密情報
 #         パターン該当文字列は存在しないが、姉妹ハーネス2件（上記）との対称性確保と、将来
 #         このハーネスにも検出パターンの実例をフィクスチャ等として埋め込むテストケースが
 #         追加された場合に備えた予防的措置として除外対象とする。
-#       - scripts/validate.sh                      : 本チェック自身。本セクションのコメントは
+#       - .claude/scripts/validate.sh                      : 本チェック自身。本セクションのコメントは
 #         検出パターンやカテゴリ名を説明のため文章中で言及しており（例: 「api-token」という
 #         カテゴリ名や、キー代入形パターンの説明文自体）、これらの語がパターンに偶然
 #         マッチしてしまう（検証ロジックが自分自身の説明コメントを誤検知する）自己参照
@@ -959,12 +963,12 @@ SECRET_HIT_COUNT=0
 
 for secret_scan_rel in "${SECRET_SCAN_FILES[@]}"; do
   # ディレクトリ丸ごとではなく、既知ハーネスファイルをパス単位で明示的に除外する
-  # （scripts/tests/fixtures/ 等は対象に残し、将来の汚染を検知できるようにするため）。
+  # （.claude/scripts/tests/fixtures/ 等は対象に残し、将来の汚染を検知できるようにするため）。
   case "$secret_scan_rel" in
-    scripts/tests/run-tests.sh) continue ;;
-    scripts/tests/run-git-changelog-tests.sh) continue ;;
-    scripts/tests/run-aggregate-agent-token-usage-tests.sh) continue ;;
-    scripts/validate.sh) continue ;;
+    .claude/scripts/tests/run-tests.sh) continue ;;
+    .claude/scripts/tests/run-git-changelog-tests.sh) continue ;;
+    .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh) continue ;;
+    .claude/scripts/validate.sh) continue ;;
   esac
   secret_scan_abs="$REPO_ROOT/$secret_scan_rel"
   [ -f "$secret_scan_abs" ] || continue
@@ -1413,7 +1417,7 @@ fi
 # ---------------------------------------------------------------------------
 # 11) スクリプト・CI定義のファイルモード検査（CONTRIBUTING 8.2 の機械化）
 #
-# 対象範囲は CONTRIBUTING.md 8.1 の適用範囲と同一（scripts/ 配下全体・
+# 対象範囲は CONTRIBUTING.md 8.1 の適用範囲と同一（.claude/scripts/ 配下全体・
 # .github/workflows/ 配下・.github/dependabot.yml）。この範囲内の git index 上の
 # ファイルモードが、`.sh` は 100755（実行可能）、それ以外（.yml・fixtures配下の
 # データファイル等）は 100644 であることを検証する。
@@ -1459,7 +1463,7 @@ if git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         "git index上のファイルモードが '${fm_mode}' ですが、規約（CONTRIBUTING 8.2）上は '${fm_expected}' である必要があります（修正例: git update-index --chmod=${fm_chmod_flag} -- ${fm_relf}）"
       FILE_MODE_VIOLATION_COUNT=$((FILE_MODE_VIOLATION_COUNT + 1))
     fi
-  done < <(git -C "$REPO_ROOT" ls-files -s -z -- scripts .github/workflows .github/dependabot.yml 2>/dev/null)
+  done < <(git -C "$REPO_ROOT" ls-files -s -z -- .claude/scripts .github/workflows .github/dependabot.yml 2>/dev/null)
 fi
 
 # ---------------------------------------------------------------------------
@@ -1481,12 +1485,18 @@ DOC_PATH_REF_TARGET_GLOBS=(
   'skills/*/SKILL.md'
 )
 
-# 除外(4): 利用者側資材の例示パスとして許容する明示除外リスト（実在しなくてもERROR
-# にしない）。現状は commands/optimize-assets.md・skills/conventions/SKILL.md が
-# 他AIツール向け資材の例として挙げる .github/copilot-instructions.md のみ（本リポジトリ
-# 内には実在しないことを承知のうえでの例示。2026-08-04時点の事前スキャンでの確認範囲）。
+# 除外(4): 実在検証の対象外として個別に許容する明示除外リスト（実在しなくてもERROR
+# にしない）。
+#   - .github/copilot-instructions.md: commands/optimize-assets.md・
+#     skills/conventions/SKILL.md が他AIツール向け資材の例として挙げるのみで、本リポジトリ
+#     内には実在しないことを承知のうえでの例示（2026-08-04時点の事前スキャンでの確認範囲）。
+#   - .claude/settings.local.json: .gitignore 済みで実在しないファイルへの言及があるため
+#     （issue #71 移設対応）。.claude/ 配下の他の参照は拡張子なしディレクトリ表記または
+#     `<`プレースホルダのため既存規則（検出プレフィックス末尾が拡張子で終わらない／
+#     除外(2)）で別途除外済み。
 DOC_PATH_REF_EXCLUDE_LIST=(
   '.github/copilot-instructions.md'
+  '.claude/settings.local.json'
 )
 
 # 検出プレフィックス・拡張子の正規表現。.hw/ を検出プレフィックスに含める理由:
@@ -1498,7 +1508,7 @@ DOC_PATH_REF_EXCLUDE_LIST=(
 # 検出プレフィックスに含めたうえで除外しないと誤検知になることを事前スキャンで
 # 確認済み。
 DOC_PATH_REF_BT_PATTERN='`([^`]+)`'
-DOC_PATH_REF_PREFIX_RE='^(agents/|commands/|skills/|scripts/|\.github/|\.claude-plugin/|\.hw/)'
+DOC_PATH_REF_PREFIX_RE='^(agents/|commands/|skills/|scripts/|\.claude/|\.github/|\.claude-plugin/|\.hw/)'
 DOC_PATH_REF_EXT_RE='\.(md|sh|json|yml|yaml)$'
 
 DOC_PATH_REF_FILES_SCANNED=0
@@ -1633,10 +1643,10 @@ echo '==================================================='
 echo "対象件数: agents=$agent_total / commands=$command_total / skills=$skill_total"
 echo "README突合: エージェント README=$AGENT_README_COUNT/実体=$AGENT_FILE_COUNT  コマンド README=$CMD_README_COUNT/実体=$CMD_FILE_COUNT  スキル README=$SKILL_README_COUNT/実体=$SKILL_FILE_COUNT"
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
-echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・scripts/validate.sh自身は対象外）"
+echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・.claude/scripts/validate.sh自身は対象外）"
 echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件 / 非リーダーfork スキル呼び出し検出=${FORK_SKILL_CALL_HITS}件 / commands URL区切り規約行欠落=${GUIDELINE_URL_DELIMITER_MISSING_COUNT}件"
 echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
-echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
+echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（.claude/scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
 echo "文書内パス参照検証: 走査対象=${DOC_PATH_REF_FILES_SCANNED}文書 / 抽出トークン=${DOC_PATH_REF_TOKEN_TOTAL}件 / 除外(.hw配下)=${DOC_PATH_REF_SKIP_HW_COUNT}件 / 除外(プレースホルダ)=${DOC_PATH_REF_SKIP_PLACEHOLDER_COUNT}件 / 除外(ワイルドカード)=${DOC_PATH_REF_SKIP_WILDCARD_COUNT}件 / 除外(利用者資材例示リスト)=${DOC_PATH_REF_SKIP_EXCLUDE_LIST_COUNT}件 / 不在検出=${DOC_PATH_REF_MISSING_COUNT}件 / トラバーサル検出=${DOC_PATH_REF_TRAVERSAL_COUNT}件"
 echo ''
 

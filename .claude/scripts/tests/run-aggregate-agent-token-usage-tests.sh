@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# scripts/aggregate-agent-token-usage.sh の回帰テストハーネス。
+# .claude/scripts/aggregate-agent-token-usage.sh の回帰テストハーネス。
 #
 # 方針:
-#   - 外部ランタイム非依存（bash + POSIX標準ツールのみ。scripts/tests/run-tests.sh 等と同じ方針）。
+#   - 外部ランタイム非依存（bash + POSIX標準ツールのみ。.claude/scripts/tests/run-tests.sh 等と同じ方針）。
 #   - 実データ（~/.claude/projects/）は使わず、固定フィクスチャ
-#     scripts/tests/fixtures/agent-token-usage/ に対して実行し、出力を検証する
+#     .claude/scripts/tests/fixtures/agent-token-usage/ に対して実行し、出力を検証する
 #     （利用者の実トランスクリプトに依存させず再現性を確保するため）。
 #   - フィクスチャは以下を意図的に含む最小構成:
 #       - 同一 agentType の複数回委任の合算（hw:qa-review, 2件）
@@ -18,7 +18,7 @@
 #   - 一時ディレクトリは mktemp -d で作成し、trap で必ず削除する（lib/assertions.sh 側）。
 #
 # 実行方法:
-#   bash scripts/tests/run-aggregate-agent-token-usage-tests.sh
+#   bash .claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh
 #
 # 終了コード: 全ケースPASSなら0、1件でもFAILがあれば1。
 #
@@ -27,8 +27,8 @@ set -uo pipefail
 # 非ゼロ終了を扱うため）。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-TARGET_SH="$REPO_ROOT/scripts/aggregate-agent-token-usage.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TARGET_SH="$REPO_ROOT/.claude/scripts/aggregate-agent-token-usage.sh"
 FIXTURE_DIR="$SCRIPT_DIR/fixtures/agent-token-usage"
 ASSERTIONS_LIB="$SCRIPT_DIR/lib/assertions.sh"
 
@@ -47,7 +47,7 @@ fi
 
 # アサーションヘルパー・一時ディレクトリ管理（TMP_DIRS/cleanup/trap）・テスト集計
 # （PASS_COUNT/FAIL_COUNT/run_test/finish_test_run）は
-# scripts/tests/run-tests.sh / run-git-changelog-tests.sh と共通のため lib へ切り出し済み。
+# .claude/scripts/tests/run-tests.sh / run-git-changelog-tests.sh と共通のため lib へ切り出し済み。
 source "$ASSERTIONS_LIB"
 
 run_target() {

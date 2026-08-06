@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# scripts/close-linked-issues.sh の回帰テストハーネス。
+# .claude/scripts/close-linked-issues.sh の回帰テストハーネス。
 #
 # 方針:
 #   - 外部ランタイム非依存（bash + POSIX標準ツール + git のみ）。他ハーネスと同じ方針を踏襲する。
-#   - アサーション・一時ディレクトリ管理・テスト集計は scripts/tests/lib/assertions.sh を
+#   - アサーション・一時ディレクトリ管理・テスト集計は .claude/scripts/tests/lib/assertions.sh を
 #     source して使う（ハーネスごとの再実装をしない。CONTRIBUTING 8.4）。
 #   - 対象スクリプトは gh CLI 経由で GitHub と通信するため、テストでは gh のスタブを
 #     一時ディレクトリに作り PATH の先頭へ差し込む。実際の GitHub へは一切アクセスしない
@@ -14,10 +14,10 @@
 #       STUB_ISSUES    : "<番号>:<state>:<issue|pr>" を空白区切りで並べたもの（未列挙は取得失敗）
 #       STUB_FAIL_PATCH: この番号の PATCH を失敗させる（省略時はすべて成功）
 #       STUB_CALL_LOG  : 書き込み系 API 呼び出しの記録先ファイル
-#   - PR 本文のフィクスチャは scripts/tests/fixtures/close-linked-issues/ に置く（8.4）。
+#   - PR 本文のフィクスチャは .claude/scripts/tests/fixtures/close-linked-issues/ に置く（8.4）。
 #
 # 実行方法:
-#   bash scripts/tests/run-close-linked-issues-tests.sh
+#   bash .claude/scripts/tests/run-close-linked-issues-tests.sh
 #
 # 終了コード: 全ケースPASSなら0、1件でもFAILがあれば1。
 #
@@ -25,8 +25,8 @@ set -uo pipefail
 # 注意: -e は使わない（他ハーネス同様、個々のテストケース内で非ゼロ終了を扱うため）。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-TARGET_SH="$REPO_ROOT/scripts/close-linked-issues.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TARGET_SH="$REPO_ROOT/.claude/scripts/close-linked-issues.sh"
 FIXTURE_DIR="$SCRIPT_DIR/fixtures/close-linked-issues"
 ASSERTIONS_LIB="$SCRIPT_DIR/lib/assertions.sh"
 
@@ -55,7 +55,7 @@ CALL_LOG="$STUB_DIR/calls.log"
 
 cat > "$STUB_DIR/gh" <<'STUB'
 #!/usr/bin/env bash
-# テスト用 gh スタブ（scripts/tests/run-close-linked-issues-tests.sh 専用）。
+# テスト用 gh スタブ（.claude/scripts/tests/run-close-linked-issues-tests.sh 専用）。
 set -uo pipefail
 
 log_call() {

@@ -18,10 +18,10 @@ name: delete-merged-branch
 #   リリース PR（9.2）で head=develop 自体が削除される事故を構造的に防げない。
 #   本ワークフローは base=='develop' の PR に限定することで、この事故を設計上排除している。
 #
-# scripts/git-cleanup-branch.sh（ローカル側の後始末）との分担:
+# .claude/scripts/git-cleanup-branch.sh（ローカル側の後始末）との分担:
 #   本ワークフローはリモート追跡ブランチの削除のみを行う。ローカルの追跡ブランチ・
 #   マージ済みローカルブランチの削除は、引き続き利用者が
-#   `bash scripts/git-cleanup-branch.sh develop` を実行すること
+#   `bash .claude/scripts/git-cleanup-branch.sh develop` を実行すること
 #   （9.1 参照。本ワークフローはこの手順を代替しない）。
 #
 # 認証・シークレット: 外部シークレットは不要である。ubuntu-latest ランナーに同梱の gh CLI と、

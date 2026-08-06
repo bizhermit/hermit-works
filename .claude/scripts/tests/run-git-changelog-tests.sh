@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 #
-# scripts/git-changelog.sh の回帰テストハーネス。
+# .claude/scripts/git-changelog.sh の回帰テストハーネス。
 #
 # 方針:
-#   - scripts/tests/run-tests.sh（validate.sh用）と同じ方針を踏襲する: 外部ランタイム
+#   - .claude/scripts/tests/run-tests.sh（validate.sh用）と同じ方針を踏襲する: 外部ランタイム
 #     非依存（bash + POSIX標準ツール + git のみ）、一時ディレクトリは mktemp -d で作成し
 #     trap で必ず削除する。
 #   - git-changelog.sh は「自分自身が置かれているディレクトリの1階層上」を対象リポジトリ
-#     （REPO_ROOT）として決め打ちで扱う設計のため（scripts/validate.sh 等、本リポジトリの
+#     （REPO_ROOT）として決め打ちで扱う設計のため（.claude/scripts/validate.sh 等、本リポジトリの
 #     他スクリプトと同じ規約）、フィクスチャは静的ファイルではなく「一時ディレクトリに
 #     git init し、Conventional Commits 形式のコミットを積んだ使い捨てリポジトリ」を作り、
 #     そのリポジトリ配下に git-changelog.sh 自体をコピーして実行する。
 #
 # 実行方法:
-#   bash scripts/tests/run-git-changelog-tests.sh
+#   bash .claude/scripts/tests/run-git-changelog-tests.sh
 #
 # 終了コード: 全ケースPASSなら0、1件でもFAILがあれば1。
 #
@@ -21,8 +21,8 @@ set -uo pipefail
 # 注意: -e は使わない（run-tests.sh 同様、個々のテストケース内で非ゼロ終了を扱うため）。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-GIT_CHANGELOG_SH="$REPO_ROOT/scripts/git-changelog.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+GIT_CHANGELOG_SH="$REPO_ROOT/.claude/scripts/git-changelog.sh"
 ASSERTIONS_LIB="$SCRIPT_DIR/lib/assertions.sh"
 
 if [ ! -f "$GIT_CHANGELOG_SH" ]; then
@@ -36,7 +36,7 @@ fi
 
 # アサーションヘルパー・一時ディレクトリ管理（TMP_DIRS/cleanup/trap）・テスト集計
 # （PASS_COUNT/FAIL_COUNT/run_test/finish_test_run）は
-# scripts/tests/run-tests.sh と共通のため lib へ切り出し済み（M16）。
+# .claude/scripts/tests/run-tests.sh と共通のため lib へ切り出し済み（M16）。
 source "$ASSERTIONS_LIB"
 
 # 使い捨てのgitリポジトリを作り、グローバル変数 NEW_REPO_DIR にパスを格納する
@@ -68,9 +68,9 @@ commit_in() {
 # 指定の使い捨てリポジトリ配下に git-changelog.sh をコピーしたうえで実行する。
 run_changelog_in_repo() {
   local d="$1"; shift
-  mkdir -p "$d/scripts"
-  cp "$GIT_CHANGELOG_SH" "$d/scripts/git-changelog.sh"
-  LAST_OUTPUT="$(bash "$d/scripts/git-changelog.sh" "$@" 2>&1)"
+  mkdir -p "$d/.claude/scripts"
+  cp "$GIT_CHANGELOG_SH" "$d/.claude/scripts/git-changelog.sh"
+  LAST_OUTPUT="$(bash "$d/.claude/scripts/git-changelog.sh" "$@" 2>&1)"
   LAST_EXIT=$?
 }
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 #
-# 正典 scripts/lib/guidelines.sh の逐語検証用文言（GUIDELINE_*）を編集した際、変更差分
+# 正典 .claude/scripts/lib/guidelines.sh の逐語検証用文言（GUIDELINE_*）を編集した際、変更差分
 # （直前の git HEAD時点との比較）を対象ファイル群へ機械的に反映（伝播）するスクリプト。
 #
 # 位置づけ（2026-08-01案件B。DESIGN.md 2.30参照）:
-#   正典＝scripts/lib/guidelines.sh／検証＝scripts/validate.sh／伝播＝本スクリプトの3分掌。
+#   正典＝.claude/scripts/lib/guidelines.sh／検証＝.claude/scripts/validate.sh／伝播＝本スクリプトの3分掌。
 #   本スクリプトは lib の「現在の値」と「git HEAD時点でコミットされている値」を比較し、
-#   差分がある定数だけを対象ファイルへ反映する。対象ファイルへの分配は scripts/validate.sh の
+#   差分がある定数だけを対象ファイルへ反映する。対象ファイルへの分配は .claude/scripts/validate.sh の
 #   検証分配（セクション9(a)(c)(e)(d)(f)(g)(h)(j)）と同一にする。
 #
 # 採用方式（推奨方式どおり。担当判断での調整なし）:
-#   旧文言は `git show HEAD:scripts/lib/guidelines.sh` を一時ファイル化して source した値から
+#   旧文言は `git show HEAD:.claude/scripts/lib/guidelines.sh` を一時ファイル化して source した値から
 #   導出し、作業ツリーの lib（本スクリプトが SCRIPT_DIR 相対で source する現在値）と差分が
 #   ある定数のみを置換対象にする。GUIDELINE_ で始まる変数名は、宣言側・参照側を問わずすべて
 #   OLD_ 接頭辞に置換してから source することで、現在値（作業ツリーの lib から既にこのプロセス
@@ -36,14 +36,14 @@
 #   末尾で validate.sh を自動実行し、整合を確認する。
 #
 # 実行例:
-#   bash scripts/sync-guidelines.sh              # 現在のリポジトリに対して実行
-#   bash scripts/sync-guidelines.sh --dry-run    # 適用対象を確認するだけ（書き込みなし）
-#   bash scripts/sync-guidelines.sh /path/to/repo-root --dry-run
+#   bash .claude/scripts/sync-guidelines.sh              # 現在のリポジトリに対して実行
+#   bash .claude/scripts/sync-guidelines.sh --dry-run    # 適用対象を確認するだけ（書き込みなし）
+#   bash .claude/scripts/sync-guidelines.sh /path/to/repo-root --dry-run
 #
 # 信頼前提（重要。sec-audit M-1）:
 #   引数 repo_root は本プラグイン自身の作業ツリー、または回帰テストが生成する使い捨て
 #   フィクスチャに限定すること。任意の外部・利用者リポジトリを指定して実行してはならない。
-#   本スクリプトは `git -C "$REPO_ROOT" show HEAD:scripts/lib/guidelines.sh` の結果を
+#   本スクリプトは `git -C "$REPO_ROOT" show HEAD:.claude/scripts/lib/guidelines.sh` の結果を
 #   一時ファイルへ書き出したうえで source する（旧値抽出のため）。これは repo_root の
 #   git HEAD 時点に置かれたシェルコードをそのまま実行することを意味するため、HEAD に
 #   悪意あるコードが仕込まれていた場合は任意コード実行につながり得る。
@@ -56,9 +56,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<'USAGE'
-使い方: bash scripts/sync-guidelines.sh [--dry-run] [repo_root]
+使い方: bash .claude/scripts/sync-guidelines.sh [--dry-run] [repo_root]
 
-正典 scripts/lib/guidelines.sh の GUIDELINE_* 定数について、直前の git HEAD時点の値と
+正典 .claude/scripts/lib/guidelines.sh の GUIDELINE_* 定数について、直前の git HEAD時点の値と
 現在の値を比較し、差分がある定数を対象ファイル群（agents/*.md・commands/*.md・
 skills/*/SKILL.md の該当ファイル）へリテラル置換で反映する。
 
@@ -91,7 +91,7 @@ done
 
 REPO_ROOT="$REPO_ROOT_ARG"
 if [ -z "$REPO_ROOT" ]; then
-  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+  REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 else
   REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
 fi
@@ -117,8 +117,8 @@ fi
 # `git show HEAD:path` の path はリポジトリ最上位（REPO_ROOT）基準のパスであるという前提
 # （git の仕様どおり。CWDが$REPO_ROOT配下の別ディレクトリであっても、-Cで指定した
 # $REPO_ROOTが最上位である限りこの相対パス表記でよい）。
-if ! OLD_LIB_CONTENT="$(git -C "$REPO_ROOT" show 'HEAD:scripts/lib/guidelines.sh' 2>/dev/null)"; then
-  echo "同期対象なし: scripts/lib/guidelines.sh が git HEAD時点に存在しません（初回コミット前等）。正常終了します。"
+if ! OLD_LIB_CONTENT="$(git -C "$REPO_ROOT" show 'HEAD:.claude/scripts/lib/guidelines.sh' 2>/dev/null)"; then
+  echo "同期対象なし: .claude/scripts/lib/guidelines.sh が git HEAD時点に存在しません（初回コミット前等）。正常終了します。"
   exit 0
 fi
 
@@ -137,7 +137,7 @@ printf '%s\n' "$OLD_LIB_CONTENT" | sed 's/GUIDELINE_/OLD_GUIDELINE_/g' > "$OLD_L
 GUIDELINE_OCCURRENCE_BEFORE="$(grep -o 'GUIDELINE_' <<<"$OLD_LIB_CONTENT" | wc -l | tr -d ' ')"
 GUIDELINE_OCCURRENCE_AFTER="$(grep -o 'OLD_GUIDELINE_' "$OLD_LIB_TMP" | wc -l | tr -d ' ')"
 if [ "$GUIDELINE_OCCURRENCE_BEFORE" != "$GUIDELINE_OCCURRENCE_AFTER" ]; then
-  echo "Error: GUIDELINE_ -> OLD_GUIDELINE_ のリネーム前提が崩れています（前:${GUIDELINE_OCCURRENCE_BEFORE} 件 / 後:${GUIDELINE_OCCURRENCE_AFTER} 件）。scripts/lib/guidelines.sh のHEAD時点の内容を確認してください。" >&2
+  echo "Error: GUIDELINE_ -> OLD_GUIDELINE_ のリネーム前提が崩れています（前:${GUIDELINE_OCCURRENCE_BEFORE} 件 / 後:${GUIDELINE_OCCURRENCE_AFTER} 件）。.claude/scripts/lib/guidelines.sh のHEAD時点の内容を確認してください。" >&2
   exit 1
 fi
 
@@ -151,10 +151,10 @@ OLD_VARS_DUMP="$(
 eval "$OLD_VARS_DUMP"
 
 # ---------------------------------------------------------------------------
-# 対象ファイル一覧の算出（scripts/validate.sh の検証分配と同一にする）
+# 対象ファイル一覧の算出（.claude/scripts/validate.sh の検証分配と同一にする）
 # ---------------------------------------------------------------------------
 
-# is_leader_agent_name は scripts/lib/guidelines.sh（正典）で定義され、source 済み
+# is_leader_agent_name は .claude/scripts/lib/guidelines.sh（正典）で定義され、source 済み
 # （2026-08-01案件T6で自前実装 is_leader_agent_name_sync を撤去し集約。CONTRIBUTING.md 1.5・1.8参照）。
 
 AGENTS_ALL=()
@@ -255,7 +255,7 @@ sync_item() {
   done
 }
 
-# 対象分配は scripts/validate.sh セクション9(a)(c)(e)(d)(f)(g)(h)(j)と同一。
+# 対象分配は .claude/scripts/validate.sh セクション9(a)(c)(e)(d)(f)(g)(h)(j)と同一。
 sync_item '共通ガードレール6短文＋アンカー（9a）' \
   OLD_GUIDELINE_ANCHOR_PLUS_BLOCK GUIDELINE_ANCHOR_PLUS_BLOCK \
   "${AGENTS_ALL[@]+"${AGENTS_ALL[@]}"}"
@@ -308,7 +308,7 @@ echo '==================================================='
 VALIDATE_EXIT=0
 if [ "$DRY_RUN" -eq 0 ]; then
   echo
-  echo '--- 整合確認: bash scripts/validate.sh を実行します ---'
+  echo '--- 整合確認: bash .claude/scripts/validate.sh を実行します ---'
   bash "$SCRIPT_DIR/validate.sh" "$REPO_ROOT" || VALIDATE_EXIT=$?
 fi
 

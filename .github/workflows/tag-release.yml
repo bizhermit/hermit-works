@@ -10,7 +10,7 @@ name: tag-release
 #     第1親 = マージ前の main HEAD
 #     第2親 = マージ前の develop HEAD（リリース準備コミットを含む）
 #   の2つである。マージコミット自体にタグを打つと、そのコミットは main 側にしか存在せず
-#   develop の履歴に含まれないため、scripts/git-changelog.sh の起点検出が壊れる。
+#   develop の履歴に含まれないため、.claude/scripts/git-changelog.sh の起点検出が壊れる。
 #   第2親（develop 側 HEAD）に打てば、リリース準備コミット以降に develop へ入った変更も
 #   当該リリースに含まれる扱いになり、changelog の範囲とも整合する。
 #

@@ -24,19 +24,19 @@
 #
 # 実行例:
 #   # 直前のタグから現在(HEAD)までの変更一覧（タグが無ければ全履歴）
-#   bash scripts/git-changelog.sh
+#   bash .claude/scripts/git-changelog.sh
 #
 #   # 起点・終点を明示的に指定
-#   bash scripts/git-changelog.sh v1.2.0 HEAD
+#   bash .claude/scripts/git-changelog.sh v1.2.0 HEAD
 #
 #   # 特定プロジェクト配下の変更のみに絞り込む（モノレポでのプロジェクト別リリース向け）
-#   bash scripts/git-changelog.sh v1.2.0 HEAD -- services/billing
+#   bash .claude/scripts/git-changelog.sh v1.2.0 HEAD -- services/billing
 #
 set -euo pipefail
 export LC_ALL=C
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 if ! git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: $REPO_ROOT は git リポジトリではありません。" >&2

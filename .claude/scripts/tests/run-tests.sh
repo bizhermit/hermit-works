@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# scripts/validate.sh の回帰テストハーネス。
+# .claude/scripts/validate.sh の回帰テストハーネス。
 #
 # 方針:
 #   - 外部ランタイム非依存（bash + POSIX標準ツールのみ。bats等の追加ツールは導入しない）。
 #     validate.sh 本体と同じ方針を踏襲する。
-#   - 最小フィクスチャ（scripts/tests/fixtures/base/）を各ケースごとに一時ディレクトリへ
+#   - 最小フィクスチャ（.claude/scripts/tests/fixtures/base/）を各ケースごとに一時ディレクトリへ
 #     コピーし、必要な欠陥を注入したうえで `validate.sh <一時ディレクトリ>` を実行し、
 #     終了コードと出力（カテゴリ検知）をアサートする。
 #   - 一時ディレクトリは mktemp -d で作成し、スクリプト終了時に必ず削除する（trap）。
 #
 # 実行方法:
-#   bash scripts/tests/run-tests.sh
+#   bash .claude/scripts/tests/run-tests.sh
 #
 # 終了コード: 全ケースPASSなら0、1件でもFAILがあれば1。
 #
@@ -19,8 +19,8 @@ set -uo pipefail
 # 注意: -e は使わない。個々のテストケース内で validate.sh の非ゼロ終了を扱うため。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-VALIDATE_SH="$REPO_ROOT/scripts/validate.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+VALIDATE_SH="$REPO_ROOT/.claude/scripts/validate.sh"
 FIXTURE_BASE="$SCRIPT_DIR/fixtures/base"
 ASSERTIONS_LIB="$SCRIPT_DIR/lib/assertions.sh"
 
@@ -39,7 +39,7 @@ fi
 
 # アサーションヘルパー・一時ディレクトリ管理（TMP_DIRS/cleanup/trap）・テスト集計
 # （PASS_COUNT/FAIL_COUNT/run_test/finish_test_run）は
-# scripts/tests/run-git-changelog-tests.sh と共通のため lib へ切り出し済み（M16）。
+# .claude/scripts/tests/run-git-changelog-tests.sh と共通のため lib へ切り出し済み（M16）。
 source "$ASSERTIONS_LIB"
 
 # フィクスチャ一式を新しい一時ディレクトリへコピーし、グローバル変数 NEW_CASE_DIR に
@@ -47,7 +47,7 @@ source "$ASSERTIONS_LIB"
 #
 # 注意: 呼び出し側で `dir="$(new_case_dir)"` のようにコマンド置換で呼ぶと、本関数は
 # サブシェル内で実行されるため TMP_DIRS への追記がサブシェルに閉じ込められて失われ、
-# cleanup（EXITトラップ、scripts/tests/lib/assertions.sh 側で設定）が一時ディレクトリを
+# cleanup（EXITトラップ、.claude/scripts/tests/lib/assertions.sh 側で設定）が一時ディレクトリを
 # 回収できなくなる（validate.sh側の compare_name_sets 関数コメントにある注意点と同種の
 # 落とし穴）。そのため本関数は標準出力ではなくグローバル変数経由で結果を返す設計にしている。
 # 呼び出し側は `new_case_dir; local dir="$NEW_CASE_DIR"` の形で使うこと。
@@ -518,7 +518,7 @@ EOF
   return $ok
 }
 
-# ---- show-org.md 不在時のスキップ確認（scripts/validate.sh セクション6） ------
+# ---- show-org.md 不在時のスキップ確認（.claude/scripts/validate.sh セクション6） ------
 #
 # mgmt-coordinator.md「組織構成（振り分け先）」表との突合チェック（旧セクション5）は
 # B8対応で撤去済み。それに伴う coordinator-sync / coordinator-extract 系の回帰テスト
@@ -538,7 +538,7 @@ test_show_org_absent_is_skipped() {
 
 # ---- compare_readme_to_files / compare_coordinator_to_files 統合の回帰確認（M15） ----
 #
-# scripts/validate.sh の compare_readme_to_files と compare_coordinator_to_files
+# .claude/scripts/validate.sh の compare_readme_to_files と compare_coordinator_to_files
 # （約45行ほぼ完全重複）を単一関数 compare_name_sets に統合した是正（M15）の回帰確認。
 # 統合前後で実データ全出力のdiffがゼロであることは別途 bash での確認手順で担保済み
 # （このハーネスでは、統合後もラベル接頭辞の有無・件数集計が正しく機能し続けることを
@@ -551,7 +551,7 @@ test_summary_line_readme_counts_format() {
   # 正常系（欠陥なし）でのサマリー行アサーション。compare_name_sets統合後も
   # CMP_LEFT_COUNT 経由での件数受け渡し（AGENT_README_COUNT等への代入）が
   # 呼び出し側3箇所すべてで正しく機能していることを、実際の出力書式
-  # （scripts/validate.sh の結果出力セクション、README突合の1行）で確認する。
+  # （.claude/scripts/validate.sh の結果出力セクション、README突合の1行）で確認する。
   run_validate "$dir"
   local ok=0
   assert_exit 0 "正常系はexit 0" || ok=1
@@ -584,9 +584,9 @@ EOF
   return $ok
 }
 
-# ---- commands/show-org.md 生成差分（scripts/validate.sh セクション6） ----------
+# ---- commands/show-org.md 生成差分（.claude/scripts/validate.sh セクション6） ----------
 
-# base フィクスチャに scripts/generate-show-org.sh の生成結果をそのまま commands/show-org.md
+# base フィクスチャに .claude/scripts/generate-show-org.sh の生成結果をそのまま commands/show-org.md
 # として配置し、README側にも /hw:show-org の記載を加える（readme-syncの誤検知を避けるため）。
 # こうして作った「生成結果と完全一致した状態」を土台に、一致確認とドリフト検知の両方をテストする。
 setup_show_org_matching_case() {
@@ -599,7 +599,7 @@ setup_show_org_matching_case() {
 
   local generated
   generated="$(mktemp)"
-  bash "$REPO_ROOT/scripts/generate-show-org.sh" "$dir" "$generated" >/dev/null 2>&1
+  bash "$REPO_ROOT/.claude/scripts/generate-show-org.sh" "$dir" "$generated" >/dev/null 2>&1
   cp "$generated" "$dir/commands/show-org.md"
   rm -f "$generated"
 }
@@ -630,11 +630,11 @@ test_show_org_drift_detected() {
   return $ok
 }
 
-# ---- 秘密情報スキャン（scripts/validate.sh セクション8） ----------------------
+# ---- 秘密情報スキャン（.claude/scripts/validate.sh セクション8） ----------------------
 #
 # 注意（重要）: ここで使う検出対象文字列（AWSキー・トークン・秘密鍵ヘッダー・接続文字列等）は
 # いずれも実在しないダミー値である。validate.sh 本体はこれらのテストケース自身
-# （scripts/tests/ 配下）を走査対象から除外しているため、誤検知回避の観点では不要だが、
+# （.claude/scripts/tests/ 配下）を走査対象から除外しているため、誤検知回避の観点では不要だが、
 # 本リポジトリは GitHub 上のパブリックリポジトリであり、GitHub 自身のシークレットスキャン /
 # プッシュ保護は「よく知られた形式の秘密情報らしき文字列」をリテラルにコミットされた
 # ファイル内容から機械的に検出する（本チェック用ダミーかどうかは考慮しない）。
@@ -782,31 +782,31 @@ test_secret_scan_masks_value_in_output() {
 }
 
 test_secret_scan_excludes_only_known_harness_files_not_whole_dir() {
-  # sec-audit差し戻し(1回目) [High] への対応確認: scripts/tests/ 配下を丸ごと除外するのではなく、
+  # sec-audit差し戻し(1回目) [High] への対応確認: .claude/scripts/tests/ 配下を丸ごと除外するのではなく、
   # 既知のハーネスファイル（run-tests.sh, run-git-changelog-tests.sh）のみをパス単位で除外し、
-  # それ以外（scripts/tests/fixtures/ 配下等、将来汚染されうる場所）は引き続き検出対象と
+  # それ以外（.claude/scripts/tests/fixtures/ 配下等、将来汚染されうる場所）は引き続き検出対象と
   # なることを確認する。
   new_case_dir; local dir="$NEW_CASE_DIR"
-  mkdir -p "$dir/scripts/tests"
+  mkdir -p "$dir/.claude/scripts/tests"
   # AKIA + 16文字（英大文字）。実行時に断片を連結して組み立てる（理由は本セクション冒頭の注意参照）。
   local fake_aws_key
   fake_aws_key="AKIA$(printf '%s' 'QWERTY')$(printf '%s' 'UIOPAS')$(printf '%s' 'DFGH')"
   # 明示的な除外対象（既知ハーネスファイル）: ダミー秘密情報を含んでいても検知されない。
-  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/run-tests.sh"
-  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/run-git-changelog-tests.sh"
-  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/run-aggregate-agent-token-usage-tests.sh"
+  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/.claude/scripts/tests/run-tests.sh"
+  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/.claude/scripts/tests/run-git-changelog-tests.sh"
+  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/.claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh"
   # 除外対象外（fixtures配下想定のファイル）: 検知されなければならない。
-  mkdir -p "$dir/scripts/tests/fixtures"
-  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/scripts/tests/fixtures/leak.txt"
+  mkdir -p "$dir/.claude/scripts/tests/fixtures"
+  printf 'aws_access_key_id = %s\n' "$fake_aws_key" > "$dir/.claude/scripts/tests/fixtures/leak.txt"
 
   run_validate "$dir"
   local ok=0
   assert_exit 1 "除外対象外(fixtures配下)の検出でexit 1" || ok=1
   assert_contains 'secret-aws-key' "secret-aws-keyカテゴリで検知" || ok=1
-  assert_contains 'scripts/tests/fixtures/leak.txt' "除外対象外ファイルが検知される" || ok=1
-  assert_not_contains 'scripts/tests/run-tests.sh:' "既知ハーネスファイル(run-tests.sh)は検知されない" || ok=1
-  assert_not_contains 'scripts/tests/run-git-changelog-tests.sh:' "既知ハーネスファイル(run-git-changelog-tests.sh)は検知されない" || ok=1
-  assert_not_contains 'scripts/tests/run-aggregate-agent-token-usage-tests.sh:' "既知ハーネスファイル(run-aggregate-agent-token-usage-tests.sh)は検知されない" || ok=1
+  assert_contains '.claude/scripts/tests/fixtures/leak.txt' "除外対象外ファイルが検知される" || ok=1
+  assert_not_contains '.claude/scripts/tests/run-tests.sh:' "既知ハーネスファイル(run-tests.sh)は検知されない" || ok=1
+  assert_not_contains '.claude/scripts/tests/run-git-changelog-tests.sh:' "既知ハーネスファイル(run-git-changelog-tests.sh)は検知されない" || ok=1
+  assert_not_contains '.claude/scripts/tests/run-aggregate-agent-token-usage-tests.sh:' "既知ハーネスファイル(run-aggregate-agent-token-usage-tests.sh)は検知されない" || ok=1
   return $ok
 }
 
@@ -855,7 +855,7 @@ test_secret_scan_respects_gitignore_for_untracked_files() {
   return $ok
 }
 
-# ---- エージェント作業ガードレール（scripts/validate.sh セクション9） -----------
+# ---- エージェント作業ガードレール（.claude/scripts/validate.sh セクション9） -----------
 #
 # (a) 共通ガードレール6短文の逐語一致 / (b) 非リーダーのdisallowedTools整合（TK-7）。
 
@@ -1193,7 +1193,7 @@ EOF
   return $ok
 }
 
-# ---- 判断手順共通文言（scripts/validate.sh セクション9(e)。2026-07-30案件
+# ---- 判断手順共通文言（.claude/scripts/validate.sh セクション9(e)。2026-07-30案件
 #      「エージェント判断手順（迷った場合の段階的判断）の組み込み」T3） -----------------
 #
 # 対象は agents/mgmt-coordinator.md を除く agents/*.md 全件（リーダー・非リーダー問わず）。
@@ -1301,7 +1301,7 @@ EOF
   return $ok
 }
 
-# ---- 利用者資材を直接読む commands/skills の注入耐性文言（scripts/validate.sh セクション9(d)） --
+# ---- 利用者資材を直接読む commands/skills の注入耐性文言（.claude/scripts/validate.sh セクション9(d)） --
 #
 # 対象は skills/conventions/SKILL.md・skills/repo-map/SKILL.md・commands/optimize-assets.md・
 # commands/audit-assets.md・commands/draft-docs.md の固定5件（P-4a/P-4b対応。repo-mapは
@@ -1450,7 +1450,7 @@ EOF
   return $ok
 }
 
-# ---- tracker連携スキル固定2ファイルの非信頼入力宣言（scripts/validate.sh セクション9(f)） --
+# ---- tracker連携スキル固定2ファイルの非信頼入力宣言（.claude/scripts/validate.sh セクション9(f)） --
 #
 # 対象は skills/tracker-setup/SKILL.md・skills/tracker-sync/SKILL.md の固定2件
 # （外部進捗管理ツール連携 7.10 f1対応。GUIDELINE_EXTERNAL_INPUT_NOTE_LINE）。
@@ -1679,7 +1679,7 @@ EOF
   return $ok
 }
 
-# ---- import-assets固定1ファイルの非信頼入力宣言（scripts/validate.sh セクション9(g)） --
+# ---- import-assets固定1ファイルの非信頼入力宣言（.claude/scripts/validate.sh セクション9(g)） --
 #
 # 対象は skills/import-assets/SKILL.md の固定1件（AI資産の横展開案件 qa-review High-1・
 # 統括裁定T6。GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_LINE）。base フィクスチャにはこの
@@ -1751,7 +1751,7 @@ EOF
   return $ok
 }
 
-# ---- permission-rulesトリガー行固定3ファイル（scripts/validate.sh セクション9(h)。
+# ---- permission-rulesトリガー行固定3ファイル（.claude/scripts/validate.sh セクション9(h)。
 #      共通ルール管理の成長対応 A-3・DESIGN 2.27 追補） -------------------------------
 #
 # 対象は agents/sec-audit.md・agents/sec-appsec.md・agents/infra-devops.md の固定3件
@@ -1908,7 +1908,7 @@ EOF
   return $ok
 }
 
-# ---- 非リーダーによる context: fork スキル呼び出し検出（scripts/validate.sh セクション9(i)。
+# ---- 非リーダーによる context: fork スキル呼び出し検出（.claude/scripts/validate.sh セクション9(i)。
 #      CONTRIBUTING 4.2 運用規範「fork スキル（hw:repo-map・hw:conventions）はメイン会話・
 #      リーダー層から呼ぶ」対応。2026-08-03案件issue28 sec-audit差し戻し M-s3・
 #      CONTRIBUTING 1.4 原則4「検知手段のない規範は追加しない」対応） -------------------
@@ -2068,7 +2068,7 @@ EOF
   return $ok
 }
 
-# ---- commands/*.md 固定12ファイルのURL区切り規約行（scripts/validate.sh セクション9(j)。
+# ---- commands/*.md 固定12ファイルのURL区切り規約行（.claude/scripts/validate.sh セクション9(j)。
 #      2026-08-04案件「URL 区切り規約の commands 展開＋機械検証化」T2対応） -------------
 #
 # 対象は commands/audit-assets.md・commands/draft-docs.md・commands/help.md・
@@ -2150,7 +2150,7 @@ EOF
   return $ok
 }
 
-# ---- エージェント数量表記の検証射程拡張（scripts/validate.sh セクション10） -----
+# ---- エージェント数量表記の検証射程拡張（.claude/scripts/validate.sh セクション10） -----
 #
 # (a) .claude-plugin/marketplace.json・plugin.json description の数値混入検知。
 # (b) DESIGN.md「Nグループ・M名」・DEVELOPMENT.md「エージェント定義（N体」の
@@ -2481,7 +2481,7 @@ EOF
   return $ok
 }
 
-# ---- ファイルモード検査（scripts/validate.sh セクション11、CONTRIBUTING 8.2機械化） ----
+# ---- ファイルモード検査（.claude/scripts/validate.sh セクション11、CONTRIBUTING 8.2機械化） ----
 #
 # トークン消費効率改善 第2弾T3。git indexのモード判定が前提のため、各テストケースは
 # fixtureコピーを `git init` してから対象ファイルを配置する（test_secret_scan_*系の
@@ -2495,23 +2495,23 @@ test_file_mode_sh_not_executable_detected() {
   git -C "$dir" add -A
   git -C "$dir" commit -q -m "init"
 
-  # scripts/配下の .sh を非実行可能（100644）で追加する（第1弾コミット時の実害の再現）。
+  # .claude/scripts/配下の .sh を非実行可能（100644）で追加する（第1弾コミット時の実害の再現）。
   # 実行環境の core.fileMode 設定に検証結果が左右されないよう、chmod後にさらに
   # `git update-index --chmod=-x` でindex上のモードを明示的に固定する。
-  mkdir -p "$dir/scripts"
-  cat > "$dir/scripts/example.sh" <<'EOF'
+  mkdir -p "$dir/.claude/scripts"
+  cat > "$dir/.claude/scripts/example.sh" <<'EOF'
 #!/usr/bin/env bash
 echo hello
 EOF
-  chmod 644 "$dir/scripts/example.sh"
-  git -C "$dir" add scripts/example.sh
-  git -C "$dir" update-index --chmod=-x -- scripts/example.sh
+  chmod 644 "$dir/.claude/scripts/example.sh"
+  git -C "$dir" add .claude/scripts/example.sh
+  git -C "$dir" update-index --chmod=-x -- .claude/scripts/example.sh
 
   run_validate "$dir"
   local ok=0
-  assert_exit 1 "scripts/配下の.shが100644のケースはexit 1" || ok=1
+  assert_exit 1 ".claude/scripts/配下の.shが100644のケースはexit 1" || ok=1
   assert_contains 'file-mode-mismatch' "file-mode-mismatchカテゴリで検知" || ok=1
-  assert_contains 'scripts/example.sh' "対象ファイルが出力に含まれる" || ok=1
+  assert_contains '.claude/scripts/example.sh' "対象ファイルが出力に含まれる" || ok=1
   assert_contains "'100644'" "実際のモード100644がメッセージに含まれる" || ok=1
   assert_contains "'100755'" "期待モード100755がメッセージに含まれる" || ok=1
   return $ok
@@ -2525,18 +2525,18 @@ test_file_mode_non_sh_executable_detected() {
   git -C "$dir" add -A
   git -C "$dir" commit -q -m "init"
 
-  # scripts/tests/fixtures/ 配下の非.shファイルが実行可能（100755）で追加されたケース
+  # .claude/scripts/tests/fixtures/ 配下の非.shファイルが実行可能（100755）で追加されたケース
   # （.sh以外は100644であるべき、の逆方向の違反）。
-  mkdir -p "$dir/scripts/tests/fixtures"
-  printf 'data\n' > "$dir/scripts/tests/fixtures/data.txt"
-  git -C "$dir" add scripts/tests/fixtures/data.txt
-  git -C "$dir" update-index --chmod=+x -- scripts/tests/fixtures/data.txt
+  mkdir -p "$dir/.claude/scripts/tests/fixtures"
+  printf 'data\n' > "$dir/.claude/scripts/tests/fixtures/data.txt"
+  git -C "$dir" add .claude/scripts/tests/fixtures/data.txt
+  git -C "$dir" update-index --chmod=+x -- .claude/scripts/tests/fixtures/data.txt
 
   run_validate "$dir"
   local ok=0
   assert_exit 1 "非.shが100755のケースはexit 1" || ok=1
   assert_contains 'file-mode-mismatch' "file-mode-mismatchカテゴリで検知" || ok=1
-  assert_contains 'scripts/tests/fixtures/data.txt' "対象ファイルが出力に含まれる" || ok=1
+  assert_contains '.claude/scripts/tests/fixtures/data.txt' "対象ファイルが出力に含まれる" || ok=1
   return $ok
 }
 
@@ -2549,7 +2549,7 @@ test_file_mode_workflows_and_dependabot_scope_detected() {
   git -C "$dir" commit -q -m "init"
 
   # .github/workflows/ 配下・.github/dependabot.yml も対象範囲であることの確認
-  # （CONTRIBUTING 8.1の適用範囲＝scripts/一式に加えてこの2つ）。
+  # （CONTRIBUTING 8.1の適用範囲＝.claude/scripts/一式に加えてこの2つ）。
   mkdir -p "$dir/.github/workflows"
   printf 'name: CI\n' > "$dir/.github/workflows/ci.yml"
   printf 'version: 2\n' > "$dir/.github/dependabot.yml"
@@ -2573,7 +2573,7 @@ test_file_mode_out_of_scope_not_flagged() {
   git -C "$dir" add -A
   git -C "$dir" commit -q -m "init"
 
-  # scripts/・.github/workflows/・.github/dependabot.yml のいずれにも属さない.sh
+  # .claude/scripts/・.github/workflows/・.github/dependabot.yml のいずれにも属さない.sh
   # （リポジトリルート直下）はCONTRIBUTING 8.1の適用範囲外のため、モードが100644でも
   # 検知対象外であること（意図しない誤検知の防止）を確認する。
   printf '#!/usr/bin/env bash\necho hi\n' > "$dir/tool.sh"
@@ -2582,7 +2582,7 @@ test_file_mode_out_of_scope_not_flagged() {
 
   run_validate "$dir"
   local ok=0
-  assert_exit 0 "対象範囲外(scripts/等でない).shは検査対象外のためexit 0" || ok=1
+  assert_exit 0 "対象範囲外(.claude/scripts/等でない).shは検査対象外のためexit 0" || ok=1
   assert_not_contains 'file-mode-mismatch' "対象範囲外は検知されない" || ok=1
   return $ok
 }
@@ -2593,14 +2593,14 @@ test_file_mode_correct_modes_ok() {
   git -C "$dir" config user.email "test@example.com"
   git -C "$dir" config user.name "Test"
 
-  mkdir -p "$dir/scripts/tests/fixtures" "$dir/.github/workflows"
-  printf '#!/usr/bin/env bash\necho hi\n' > "$dir/scripts/tool.sh"
-  printf 'data\n' > "$dir/scripts/tests/fixtures/data.txt"
+  mkdir -p "$dir/.claude/scripts/tests/fixtures" "$dir/.github/workflows"
+  printf '#!/usr/bin/env bash\necho hi\n' > "$dir/.claude/scripts/tool.sh"
+  printf 'data\n' > "$dir/.claude/scripts/tests/fixtures/data.txt"
   printf 'name: CI\n' > "$dir/.github/workflows/ci.yml"
 
   git -C "$dir" add -A
-  git -C "$dir" update-index --chmod=+x -- scripts/tool.sh
-  git -C "$dir" update-index --chmod=-x -- scripts/tests/fixtures/data.txt .github/workflows/ci.yml
+  git -C "$dir" update-index --chmod=+x -- .claude/scripts/tool.sh
+  git -C "$dir" update-index --chmod=-x -- .claude/scripts/tests/fixtures/data.txt .github/workflows/ci.yml
   git -C "$dir" commit -q -m "init"
 
   run_validate "$dir"
@@ -2614,14 +2614,14 @@ test_file_mode_check_skipped_without_git_repo() {
   new_case_dir; local dir="$NEW_CASE_DIR"
   # 案件ガードレール(3): git管理外（git initしていないディレクトリ）でも
   # validate.sh全体が壊れず、本チェックは判定根拠がないため静かにスキップされること
-  # （ERRORにしない）を確認する。scripts/配下に規約違反相当のファイル
+  # （ERRORにしない）を確認する。.claude/scripts/配下に規約違反相当のファイル
   # （.shだが非実行可能）を置いても、gitリポジトリでないため検知されないのが期待値。
-  mkdir -p "$dir/scripts"
-  cat > "$dir/scripts/example.sh" <<'EOF'
+  mkdir -p "$dir/.claude/scripts"
+  cat > "$dir/.claude/scripts/example.sh" <<'EOF'
 #!/usr/bin/env bash
 echo hello
 EOF
-  chmod 644 "$dir/scripts/example.sh"
+  chmod 644 "$dir/.claude/scripts/example.sh"
 
   run_validate "$dir"
   local ok=0
@@ -2643,14 +2643,14 @@ test_file_mode_check_skipped_without_git_binary() {
   git -C "$dir" add -A
   git -C "$dir" commit -q -m "init"
 
-  mkdir -p "$dir/scripts"
-  cat > "$dir/scripts/example.sh" <<'EOF'
+  mkdir -p "$dir/.claude/scripts"
+  cat > "$dir/.claude/scripts/example.sh" <<'EOF'
 #!/usr/bin/env bash
 echo hello
 EOF
-  chmod 644 "$dir/scripts/example.sh"
-  git -C "$dir" add scripts/example.sh
-  git -C "$dir" update-index --chmod=-x -- scripts/example.sh
+  chmod 644 "$dir/.claude/scripts/example.sh"
+  git -C "$dir" add .claude/scripts/example.sh
+  git -C "$dir" update-index --chmod=-x -- .claude/scripts/example.sh
 
   local fakebin="$dir/.fakebin"
   mkdir -p "$fakebin"
