@@ -1,5 +1,6 @@
 ---
 description: hermit-works の定期実行（定期レポート・定期スタンドアップ等）をセットアップする
+argument-hint: <要望>
 ---
 
 hermit-works の定期実行をセットアップします。

@@ -730,12 +730,22 @@ bash .claude/scripts/generate-show-org.sh
 
 ### 3.1 frontmatter テンプレート
 `commands/<command-name>.md` として作成します。frontmatterは `description` のみ必須です。
+`argument-hint` は任意キーです。
 
 ```yaml
 ---
 description: <コマンドの用途を1文で>
+argument-hint: <引数のヒント（任意）>
 ---
 ```
+
+`argument-hint` は次の規約に従います。
+
+- 本文で `$ARGUMENTS` を使う場合は `argument-hint` を書きます。
+- 値は README「使い方」表の引数表記と逐語一致させます（README が引数表記の正本です）。
+- `[` で始まる値は YAML のフローシーケンス（配列）と誤解釈されるおそれがあるため、引用符で
+  囲みます（例: `argument-hint: "[対象]"`）。`<` で始まる値は引用符なしで問題ありません
+  （例: `argument-hint: <内容>`）。
 
 ### 3.2 `$ARGUMENTS` の使い方
 本文中で `$ARGUMENTS` と書くと、`/hw:<command-name> <ユーザー入力>` のユーザー入力部分がそこに展開
@@ -764,6 +774,8 @@ description: <コマンドの用途を1文で>
 - [ ] `commands/<command-name>.md` を作成した
 - [ ] frontmatterに `description` がある
 - [ ] `$ARGUMENTS` を使う場合、空入力時のフォールバックを本文に書いた
+- [ ] `$ARGUMENTS` を使う場合、`argument-hint` を frontmatter に書き、README「使い方」表の
+      引数表記と逐語一致していることを確認した
 - [ ] README「使い方」表に追記した
 - [ ] 保守用ローカルコマンド（`.claude/commands/`。3.6）に該当する場合は、上記のREADME追記に
       代えて 3.6の配置・命名規約に従い、README を更新していないことを確認した
@@ -781,6 +793,7 @@ description: <コマンドの用途を1文で>
 - frontmatterは3.1と同じく `description` のみ必須です。
 - `$ARGUMENTS` を使う場合は3.2の使い方（空入力時のフォールバックの明記を含む）に従います。
 - README は更新しません（3.4の必須は配布コマンド限定であり、本節の対象は配布物ではないためです）。
+- `argument-hint` は README に対応行が無いため、本文の引数説明に沿った表記を用います。
 - 配布コマンド（`commands/`）か保守用ローカルコマンド（`.claude/commands/`）かの判定は、1.10の
   基準（利用側リポジトリで意味を持つか）に従います。依頼の分類（プラグインのメンテナンス／
   リポジトリの環境整備）は1.11によります。本節はこれらの基準を再定義しません。

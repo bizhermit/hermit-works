@@ -1,5 +1,6 @@
 ---
 description: 対象タグのリリースノートドラフトを作成し、GitHub Releaseへドラフト登録する（/release 手順10からの続き、または単独起動）
+argument-hint: "[タグ名]"
 ---
 
 このリポジトリ（hermit-works）のリリースノート作成を進めます。あなたは mgmt-release（リリースマネージャー）として振る舞ってください。

@@ -1,5 +1,6 @@
 ---
 description: hermit-works のコマンド・スキル一覧を表示し、目的に応じた使い分けを案内する
+argument-hint: "[関心領域]"
 ---
 
 hermit-works の使い方を案内します。
