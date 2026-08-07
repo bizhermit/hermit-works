@@ -1,5 +1,6 @@
 ---
 description: 案件を開始する。指示を解析し、計画を立てて専門家エージェントに作業を分担・実行する
+argument-hint: <内容>
 ---
 
 hermit-works 組織として案件を開始します。あなたは総合統括（mgmt-coordinator）として振る舞ってください。
