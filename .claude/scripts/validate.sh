@@ -9,12 +9,15 @@
 #      - .claude/commands/*.md    : description（保守用ローカルコマンド。issue #72。
 #        配置規約は CONTRIBUTING 3.6。README一覧突合（セクション5）の対象外）
 #      - skills/<dir>/SKILL.md    : name, description
+#      - .claude/skills/<dir>/SKILL.md : name, description（保守用ローカルスキル。
+#        CONTRIBUTING 4.6。README一覧突合（セクション5）の対象外）
 #   2. agents の命名規則違反チェック
 #      - ファイル名と frontmatter の name が一致していること（大文字小文字を区別する完全一致）
 #      - name が "<group>-<role>" 形式であること
 #      - group が既定10種（strat/mgmt/biz/ana/eng/infra/qa/sec/docs/ai）に含まれること
 #   3. agents の frontmatter name 重複チェック（大文字小文字を区別する完全一致）
 #   4. skills のディレクトリ名と frontmatter name の一致チェック
+#      （skills/<dir>/SKILL.md・.claude/skills/<dir>/SKILL.md の両方が対象）
 #   5. README.md 記載のエージェント一覧・コマンド一覧・スキル一覧と、実ファイル構成の整合性チェック
 #      （記載漏れ・余剰・件数の不一致を検出）
 #      加えて、見出し未検出または該当テーブルからのトークン抽出が0件だった場合もERRORとする
@@ -122,7 +125,8 @@
 #       バッククォート付きパス参照は対象外だった）
 #       対象文書: README.md / CLAUDE.md / CONTRIBUTING.md / DESIGN.md /
 #       DEVELOPMENT.md / agents/*.md / commands/*.md / skills/*/SKILL.md /
-#       .claude/commands/*.md（保守用ローカルコマンド。issue #72）。対象文書が
+#       .claude/commands/*.md（保守用ローカルコマンド。issue #72）/
+#       .claude/skills/*/SKILL.md（保守用ローカルスキル。CONTRIBUTING 4.6）。対象文書が
 #       存在しない検証対象ディレクトリ（テストフィクスチャ等）は、該当ファイルのみ
 #       静かにスキップし（セクション6・9(d)・10・11と同様）、対象文書が1件も
 #       存在しない場合は本セクション自体を静かにスキップする（エラーにはしない）。
@@ -696,6 +700,53 @@ for d in "${SKILL_DIRS[@]}"; do
   # （agentsの命名規則チェックと同様の連鎖ERROR回避）。
   if fm_has_value 'name' && [ "${FM[name]}" != "$dir_name" ]; then
     add_issue 'ERROR' 'naming-mismatch' "skills/$dir_name/SKILL.md" \
+      "ディレクトリ名 '$dir_name' と frontmatter name '${FM[name]}' が一致しません"
+  fi
+done
+
+# ---------------------------------------------------------------------------
+# 3b) .claude/skills/<dir>/SKILL.md（保守用ローカルスキル）の検証
+#     （CONTRIBUTING 4.6。保守用ローカルスキルを初めて追加する際、3.6（保守用
+#      ローカルコマンド。セクション2b）と同様の対象拡張を行う定めに基づく。
+#      必須項目（name/description）の欠落チェックはセクション2bと同型、
+#      ディレクトリ名と frontmatter name の一致チェックは直上セクション3
+#      （配布スキル向け）と同型で行う。
+#      対象ディレクトリ（.claude/skills/）が存在しない、またはスキルが0件の場合
+#      （保守用ローカルスキル0件が正常状態。2b・.claude/commands/と同様）は、
+#      nullglobにより下記ループが自然に0回実行され、ERRORにはならない
+#      （agents/ ディレクトリ不在チェックとは異なる扱い）。
+#      README一覧突合（セクション4）の対象には含めない（CONTRIBUTING 4.6:
+#      保守用ローカルスキルはREADME非更新のため）。
+# ---------------------------------------------------------------------------
+
+LOCAL_SKILLS_DIR="$REPO_ROOT/.claude/skills"
+LOCAL_SKILL_DIRS=("$LOCAL_SKILLS_DIR"/*/)
+
+for d in "${LOCAL_SKILL_DIRS[@]}"; do
+  [ -d "$d" ] || continue
+  dir_name="$(basename "$d")"
+  skill_file="$d/SKILL.md"
+
+  if [ ! -f "$skill_file" ]; then
+    add_issue 'ERROR' 'skill-missing-file' ".claude/skills/$dir_name/" 'SKILL.md が存在しません'
+    continue
+  fi
+
+  if ! parse_frontmatter "$skill_file"; then
+    add_issue 'ERROR' 'frontmatter-missing' ".claude/skills/$dir_name/SKILL.md" \
+      'frontmatterブロックが見つかりません'
+    continue
+  fi
+  for req in name description; do
+    if ! fm_has_value "$req"; then
+      add_issue 'ERROR' 'frontmatter-required' ".claude/skills/$dir_name/SKILL.md" \
+        "必須項目 '$req' が欠落しています"
+    fi
+  done
+  # name が空/欠落の場合は frontmatter-required 側で既に検知済みのため、ここではスキップする
+  # （直上セクション3・agentsの命名規則チェックと同様の連鎖ERROR回避）。
+  if fm_has_value 'name' && [ "${FM[name]}" != "$dir_name" ]; then
+    add_issue 'ERROR' 'naming-mismatch' ".claude/skills/$dir_name/SKILL.md" \
       "ディレクトリ名 '$dir_name' と frontmatter name '${FM[name]}' が一致しません"
   fi
 done
@@ -1516,6 +1567,7 @@ DOC_PATH_REF_TARGET_GLOBS=(
   'commands/*.md'
   'skills/*/SKILL.md'
   '.claude/commands/*.md'
+  '.claude/skills/*/SKILL.md'
 )
 
 # 除外(4): 実在検証の対象外として個別に許容する明示除外リスト（実在しなくてもERROR
