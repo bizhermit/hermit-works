@@ -397,6 +397,96 @@ EOF
   return $ok
 }
 
+# ---- .claude/skills/*/SKILL.md（保守用ローカルスキル。CONTRIBUTING 4.6。
+#      .claude/scripts/validate.sh セクション1(3b)・セクション12） -------------------
+
+test_local_skill_required_missing() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 保守用ローカルスキル（.claude/skills/<dir>/SKILL.md）も name/description 必須検証の
+  # 対象であること（CONTRIBUTING 4.6）。
+  mkdir -p "$dir/.claude/skills/maint-skill"
+  cat > "$dir/.claude/skills/maint-skill/SKILL.md" <<'EOF'
+---
+---
+
+保守用ローカルスキルの本文（name/description欠落）。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "name/description欠落はexit 1" || ok=1
+  assert_contains 'frontmatter-required' "frontmatter-requiredカテゴリで検知" || ok=1
+  assert_contains ".claude/skills/maint-skill/SKILL.md" "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "'name' が欠落しています" "nameの欠落メッセージ" || ok=1
+  assert_contains "'description' が欠落しています" "descriptionの欠落メッセージ" || ok=1
+  return $ok
+}
+
+test_local_skill_dir_name_mismatch() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # ディレクトリ名 maint-skill のまま、frontmatter name のみ別値に変更 → naming-mismatch
+  # （直上セクション3・配布スキル向け検証と同型）。
+  mkdir -p "$dir/.claude/skills/maint-skill"
+  cat > "$dir/.claude/skills/maint-skill/SKILL.md" <<'EOF'
+---
+name: maint-skill-x
+description: ディレクトリ名とnameの不一致テスト用。使うタイミングも記載。
+---
+
+# 本文
+
+## 手順
+1. ダミー。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 1 "ディレクトリ名とnameの不一致はexit 1" || ok=1
+  assert_contains 'naming-mismatch' "naming-mismatchカテゴリで検知" || ok=1
+  assert_contains ".claude/skills/maint-skill/SKILL.md" "対象ファイルが出力に含まれる" || ok=1
+  assert_contains "maint-skill-x" "不一致のname値がメッセージに含まれる" || ok=1
+  return $ok
+}
+
+test_local_skill_present_not_required_in_readme() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # 保守用ローカルスキルが実在し frontmatter も満たしていても、README一覧突合
+  # （readme-sync。セクション5）の対象には含まれないこと（CONTRIBUTING 4.6:
+  # 保守用ローカルスキルはREADME非更新）。
+  mkdir -p "$dir/.claude/skills/maint-skill"
+  cat > "$dir/.claude/skills/maint-skill/SKILL.md" <<'EOF'
+---
+name: maint-skill
+description: 保守用ローカルスキルのテスト。使うタイミングも記載。
+---
+
+# 本文
+
+## 手順
+1. ダミー。
+EOF
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 "有効な保守用ローカルスキルはexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' "有効な保守用ローカルスキルはERROR 0件" || ok=1
+  assert_not_contains 'readme-sync' "README一覧突合の対象に含まれない" || ok=1
+  return $ok
+}
+
+test_local_skills_dir_absent_still_passes() {
+  new_case_dir; local dir="$NEW_CASE_DIR"
+  # fixtures/base は .claude/skills/ を持たない（保守用ローカルスキル0件が
+  # 正常状態）。ディレクトリ不在時に既存方針どおり静かにスキップされ、従来どおり
+  # PASSすることを明示的に固定する回帰ケース（CONTRIBUTING 4.6 T2 完了条件）。
+  if [ -d "$dir/.claude/skills" ]; then
+    echo "前提エラー: fixtures/base に .claude/skills/ が存在します（本ケースの前提が崩れています）" >&2
+    return 1
+  fi
+  run_validate "$dir"
+  local ok=0
+  assert_exit 0 ".claude/skills不在は従来どおりexit 0" || ok=1
+  assert_contains 'ERROR: 0 件' ".claude/skills不在は従来どおりERROR 0件" || ok=1
+  return $ok
+}
+
 # ---- README整合性 -------------------------------------------------------------
 
 test_readme_missing_entry() {
@@ -2971,6 +3061,10 @@ run_test test_naming_format_violation
 run_test test_naming_duplicate_and_case_sensitivity
 run_test test_skill_missing_file
 run_test test_skill_dir_name_mismatch
+run_test test_local_skill_required_missing
+run_test test_local_skill_dir_name_mismatch
+run_test test_local_skill_present_not_required_in_readme
+run_test test_local_skills_dir_absent_still_passes
 run_test test_readme_missing_entry
 run_test test_readme_extra_entry
 run_test test_readme_count_mismatch
