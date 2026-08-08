@@ -100,6 +100,17 @@
 #          逐語存在するかを検証する（欠落はERROR。(d)(f)(g)(h)と同様、前後文脈・行位置に
 #          依存しない存在検証で、対象ファイルが存在しない検証対象ディレクトリでは静かに
 #          スキップする）。
+#      (k) TH6（報告言語）の種別D化（案件 2026-08-08-user-side-rule-policy-remediation
+#          T4対応）。「利用者側に言語規約があればそれに従い、なければ既定として日本語」への
+#          改訂を、実測した4変種ごとに固定ファイルリストで検証する: agents/*.md 基本形33件
+#          （REPORT_LANGUAGE_BASE_FILES / GUIDELINE_REPORT_LANGUAGE_BASE_LINE）・L10n除外形
+#          8件（REPORT_LANGUAGE_L10N_FILES / GUIDELINE_REPORT_LANGUAGE_L10N_LINE）・識別子
+#          英語形10件（REPORT_LANGUAGE_ENG_ID_FILES / GUIDELINE_REPORT_LANGUAGE_ENG_ID_LINE）・
+#          commands/*.md 埋め込み形12件（REPORT_LANGUAGE_COMMANDS_FILES /
+#          GUIDELINE_REPORT_LANGUAGE_COMMANDS_PHRASE。行全体でなく「日本語で」部分文字列相当の
+#          新フレーズが対象）が、それぞれ逐語存在するかを検証する（欠落はERROR。(d)(f)(g)(h)(j)
+#          と同様、前後文脈・行位置に依存しない存在検証で、対象ファイルが存在しない検証対象
+#          ディレクトリでは静かにスキップする）。
 #   10. エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1。従来の数量チェック
 #       [5] が README.md のみを対象とし、.claude-plugin/*.json・DESIGN.md・
 #       DEVELOPMENT.md が死角になっていた是正）
@@ -1336,6 +1347,67 @@ for rel_path in "${COMMANDS_URL_DELIMITER_FILES[@]}"; do
   fi
 done
 
+# --- (k) TH6（報告言語）の種別D化（案件 2026-08-08-user-side-rule-policy-remediation
+#     T4対応） ------------------------------------------------------------------
+# 対象は REPORT_LANGUAGE_BASE_FILES（33件）・REPORT_LANGUAGE_L10N_FILES（8件）・
+# REPORT_LANGUAGE_ENG_ID_FILES（10件。計agents/*.md 51件）・REPORT_LANGUAGE_COMMANDS_FILES
+# （commands/*.md 全12件）の4リスト。(d)(f)(g)(h)(j)と同じ理由（本チェック追加のためだけに
+# 無関係な既存フィクスチャ・テストを大量に更新せずに済ませる設計判断）で、対象ファイルが
+# 存在しない検証対象ディレクトリでは静かにスキップする。
+GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT=0
+
+for rel_path in "${REPORT_LANGUAGE_BASE_FILES[@]}"; do
+  f="$REPO_ROOT/$rel_path"
+  [ -f "$f" ] || continue
+
+  file_content="$(cat "$f")"
+  file_content="${file_content//$'\r'/}"
+  if [[ "$file_content" != *"$GUIDELINE_REPORT_LANGUAGE_BASE_LINE"* ]]; then
+    add_issue 'ERROR' 'guideline-report-language-missing' "$rel_path" \
+      'TH6報告言語（正典・種別D基本形。案件2026-08-08-user-side-rule-policy-remediation T4対応）が見つかりません（欠落・改変の可能性があります。行位置・前後文脈は問わない存在検証）'
+    GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT=$((GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT + 1))
+  fi
+done
+
+for rel_path in "${REPORT_LANGUAGE_L10N_FILES[@]}"; do
+  f="$REPO_ROOT/$rel_path"
+  [ -f "$f" ] || continue
+
+  file_content="$(cat "$f")"
+  file_content="${file_content//$'\r'/}"
+  if [[ "$file_content" != *"$GUIDELINE_REPORT_LANGUAGE_L10N_LINE"* ]]; then
+    add_issue 'ERROR' 'guideline-report-language-missing' "$rel_path" \
+      'TH6報告言語（正典・種別D L10n除外形。案件2026-08-08-user-side-rule-policy-remediation T4対応）が見つかりません（欠落・改変の可能性があります。行位置・前後文脈は問わない存在検証）'
+    GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT=$((GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT + 1))
+  fi
+done
+
+for rel_path in "${REPORT_LANGUAGE_ENG_ID_FILES[@]}"; do
+  f="$REPO_ROOT/$rel_path"
+  [ -f "$f" ] || continue
+
+  file_content="$(cat "$f")"
+  file_content="${file_content//$'\r'/}"
+  if [[ "$file_content" != *"$GUIDELINE_REPORT_LANGUAGE_ENG_ID_LINE"* ]]; then
+    add_issue 'ERROR' 'guideline-report-language-missing' "$rel_path" \
+      'TH6報告言語（正典・種別D識別子英語形。案件2026-08-08-user-side-rule-policy-remediation T4対応）が見つかりません（欠落・改変の可能性があります。行位置・前後文脈は問わない存在検証）'
+    GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT=$((GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT + 1))
+  fi
+done
+
+for rel_path in "${REPORT_LANGUAGE_COMMANDS_FILES[@]}"; do
+  f="$REPO_ROOT/$rel_path"
+  [ -f "$f" ] || continue
+
+  file_content="$(cat "$f")"
+  file_content="${file_content//$'\r'/}"
+  if [[ "$file_content" != *"$GUIDELINE_REPORT_LANGUAGE_COMMANDS_PHRASE"* ]]; then
+    add_issue 'ERROR' 'guideline-report-language-missing' "$rel_path" \
+      'TH6報告言語（正典・種別D commands埋め込み形。案件2026-08-08-user-side-rule-policy-remediation T4対応）が見つかりません（欠落・改変の可能性があります。前後文脈は問わない存在検証）'
+    GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT=$((GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT + 1))
+  fi
+done
+
 # ---------------------------------------------------------------------------
 # 10) エージェント数量表記の検証射程拡張（AI資材最適化計画 C-1）
 #
@@ -1729,7 +1801,7 @@ echo "対象件数: agents=$agent_total / commands=$command_total / skills=$skil
 echo "README突合: エージェント README=$AGENT_README_COUNT/実体=$AGENT_FILE_COUNT  コマンド README=$CMD_README_COUNT/実体=$CMD_FILE_COUNT  スキル README=$SKILL_README_COUNT/実体=$SKILL_FILE_COUNT"
 echo "show-org.md 生成差分: $SHOW_ORG_DIFF_STATUS（commands/show-org.md 不在時は '-'）"
 echo "秘密情報スキャン: 走査対象=${SECRET_SCAN_FILE_COUNT}ファイル（追跡済み+未追跡・.gitignore尊重） / 検出=${SECRET_HIT_COUNT}件（既知ハーネスファイル・.claude/scripts/validate.sh自身は対象外）"
-echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件 / 非リーダーfork スキル呼び出し検出=${FORK_SKILL_CALL_HITS}件 / commands URL区切り規約行欠落=${GUIDELINE_URL_DELIMITER_MISSING_COUNT}件"
+echo "ガードレール整合: 共通6短文欠落=${GUIDELINE_MISSING_COUNT}件 / 非リーダーdisallowedTools欠落=${DISALLOWED_MISSING_COUNT}件 / TK-2/E-1統合文欠落=${GUIDELINE_TK2_E1_MISSING_COUNT}件 / commands・skills注入耐性文言欠落=${GUIDELINE_INJECTION_NOTE_MISSING_COUNT}件 / 判断手順共通文言欠落=${GUIDELINE_DECISION_PROCEDURE_MISSING_COUNT}件 / tracker非信頼入力宣言欠落=${GUIDELINE_EXTERNAL_INPUT_NOTE_MISSING_COUNT}件 / スナップショット宣言欠落=${GUIDELINE_SNAPSHOT_TEMPLATE_NOTE_MISSING_COUNT}件 / import-assets非信頼入力宣言欠落=${GUIDELINE_IMPORT_UNTRUSTED_INPUT_NOTE_MISSING_COUNT}件 / permission-rulesトリガー行欠落=${GUIDELINE_PERMISSION_TRIGGER_LINE_MISSING_COUNT}件 / 非リーダーfork スキル呼び出し検出=${FORK_SKILL_CALL_HITS}件 / commands URL区切り規約行欠落=${GUIDELINE_URL_DELIMITER_MISSING_COUNT}件 / TH6報告言語種別D欠落=${GUIDELINE_REPORT_LANGUAGE_MISSING_COUNT}件"
 echo "数量表記整合: JSON混入=${PLUGIN_DESC_AGENT_COUNT_HITS}件 / DESIGN不一致=${DESIGN_COUNT_MISMATCH_HITS}件 / DEVELOPMENT不一致=${DEVELOPMENT_COUNT_MISMATCH_HITS}件"
 echo "ファイルモード検査: 走査対象=${FILE_MODE_CHECKED_COUNT}件（.claude/scripts/配下・.github/workflows/配下・.github/dependabot.yml。git管理外の場合は0のままスキップ） / 違反=${FILE_MODE_VIOLATION_COUNT}件"
 echo "文書内パス参照検証: 走査対象=${DOC_PATH_REF_FILES_SCANNED}文書 / 抽出トークン=${DOC_PATH_REF_TOKEN_TOTAL}件 / 除外(.hw配下)=${DOC_PATH_REF_SKIP_HW_COUNT}件 / 除外(プレースホルダ)=${DOC_PATH_REF_SKIP_PLACEHOLDER_COUNT}件 / 除外(ワイルドカード)=${DOC_PATH_REF_SKIP_WILDCARD_COUNT}件 / 除外(利用者資材例示リスト)=${DOC_PATH_REF_SKIP_EXCLUDE_LIST_COUNT}件 / 不在検出=${DOC_PATH_REF_MISSING_COUNT}件 / トラバーサル検出=${DOC_PATH_REF_TRAVERSAL_COUNT}件"
