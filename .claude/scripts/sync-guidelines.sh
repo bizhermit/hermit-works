@@ -7,7 +7,7 @@
 #   正典＝.claude/scripts/lib/guidelines.sh／検証＝.claude/scripts/validate.sh／伝播＝本スクリプトの3分掌。
 #   本スクリプトは lib の「現在の値」と「git HEAD時点でコミットされている値」を比較し、
 #   差分がある定数だけを対象ファイルへ反映する。対象ファイルへの分配は .claude/scripts/validate.sh の
-#   検証分配（セクション9(a)(c)(e)(d)(f)(g)(h)(j)）と同一にする。
+#   検証分配（セクション9(a)(c)(e)(d)(f)(g)(h)(j)(k)）と同一にする。
 #
 # 採用方式（推奨方式どおり。担当判断での調整なし）:
 #   旧文言は `git show HEAD:.claude/scripts/lib/guidelines.sh` を一時ファイル化して source した値から
@@ -255,7 +255,7 @@ sync_item() {
   done
 }
 
-# 対象分配は .claude/scripts/validate.sh セクション9(a)(c)(e)(d)(f)(g)(h)(j)と同一。
+# 対象分配は .claude/scripts/validate.sh セクション9(a)(c)(e)(d)(f)(g)(h)(j)(k)と同一。
 sync_item '共通ガードレール6短文＋アンカー（9a）' \
   OLD_GUIDELINE_ANCHOR_PLUS_BLOCK GUIDELINE_ANCHOR_PLUS_BLOCK \
   "${AGENTS_ALL[@]+"${AGENTS_ALL[@]}"}"
@@ -291,6 +291,22 @@ sync_item 'permission-rulesトリガー行（9h）' \
 sync_item 'URL区切り規約行（9j）' \
   OLD_GUIDELINE_URL_DELIMITER_LINE GUIDELINE_URL_DELIMITER_LINE \
   "${COMMANDS_URL_DELIMITER_FILES[@]+"${COMMANDS_URL_DELIMITER_FILES[@]}"}"
+
+sync_item 'TH6報告言語 種別D基本形（9k-a）' \
+  OLD_GUIDELINE_REPORT_LANGUAGE_BASE_LINE GUIDELINE_REPORT_LANGUAGE_BASE_LINE \
+  "${REPORT_LANGUAGE_BASE_FILES[@]+"${REPORT_LANGUAGE_BASE_FILES[@]}"}"
+
+sync_item 'TH6報告言語 種別D L10n除外形（9k-b）' \
+  OLD_GUIDELINE_REPORT_LANGUAGE_L10N_LINE GUIDELINE_REPORT_LANGUAGE_L10N_LINE \
+  "${REPORT_LANGUAGE_L10N_FILES[@]+"${REPORT_LANGUAGE_L10N_FILES[@]}"}"
+
+sync_item 'TH6報告言語 種別D識別子英語形（9k-c）' \
+  OLD_GUIDELINE_REPORT_LANGUAGE_ENG_ID_LINE GUIDELINE_REPORT_LANGUAGE_ENG_ID_LINE \
+  "${REPORT_LANGUAGE_ENG_ID_FILES[@]+"${REPORT_LANGUAGE_ENG_ID_FILES[@]}"}"
+
+sync_item 'TH6報告言語 種別D commands埋め込み形（9k-d）' \
+  OLD_GUIDELINE_REPORT_LANGUAGE_COMMANDS_PHRASE GUIDELINE_REPORT_LANGUAGE_COMMANDS_PHRASE \
+  "${REPORT_LANGUAGE_COMMANDS_FILES[@]+"${REPORT_LANGUAGE_COMMANDS_FILES[@]}"}"
 
 # ---------------------------------------------------------------------------
 # 結果サマリ
