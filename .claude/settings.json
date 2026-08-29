@@ -1,0 +1,23 @@
+{
+  "extraKnownMarketplaces": {
+    "hermit-works": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
+  },
+  "enabledPlugins": {
+    "hw@hermit-works": true
+  },
+  "permissions": {
+    "allow": [
+    ],
+    "deny": [
+      "Bash(gh pr merge *)",
+      "Bash(gh repo delete *)"
+    ],
+    "ask": [
+    ]
+  }
+}

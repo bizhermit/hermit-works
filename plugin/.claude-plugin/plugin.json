@@ -1,0 +1,17 @@
+{
+  "name": "hw",
+  "displayName": "Hermit Works",
+  "version": "0.0.0",
+  "description": "システム開発をサポートするプラグイン",
+  "author": {
+    "name": "bizhermit",
+    "email": "support@bizhermit.com"
+  },
+  "license": "CC-BY-ND-4.0",
+  "keywords": [
+    "agents",
+    "organization",
+    "development",
+    "japanese"
+  ]
+}

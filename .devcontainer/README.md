@@ -1,0 +1,16 @@
+# DevContainer
+
+## compose.yml
+
+### セキュリティ: リスク受容 / HIGH指摘への対応
+
+dev-container の docker-outside-of-docker feature (ghcr.io/devcontainers/features/docker-outside-of-docker:1,devcontainer-lock.json 参照バージョン 1.10.0) は、コンテナ起動時の ENTRYPOINT(/usr/local/share/docker-init.sh) で「マウントしたホストの docker.sock の GID をコンテナ内 docker グループに合わせる (groupmod)」「socat で権限橋渡し用ソケットを立てる」処理を sudoIf (非rootなら sudo 経由) で実行する。  
+このイメージの dev ユーザーには sudo を一切付与していない (Dockerfile 参照) ため、ここを user: dev にすると entrypoint の sudo 呼び出しが失敗し、feature が機能しなくなる。そのため compose 上のコンテナ起動ユーザーは root のままとする。  
+実際の開発作業は devcontainer.json の remoteUser: dev で非rootとして行われるため、このコンテナ内での作業自体が root 化するわけではない。  
+なお、docker.sock をコンテナに渡す時点でホスト Docker デーモンへの root 相当の操作が可能になる (docker-outside-of-docker 方式に内在するリスク) ことは把握済みで、本リポジトリでは「ローカル開発体験を優先し、ホストは開発者個人のマシン限定」という前提で受容する。将来的に脱 root が必要になった場合は、dev に限定的な sudoers エントリ（該当コマンドのみ NOPASSWD） を付与する方式への変更を検討すること。  
+
+## Dockerfile
+
+## postStart.sh
+
+###

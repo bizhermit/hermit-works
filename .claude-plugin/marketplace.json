@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hermit-works",
+  "description": "Hermit Works プラグインの配布元（本リポジトリ自身をプラグインとして提供する自己参照マーケットプレイス）",
+  "owner": {
+    "name": "bizhermit",
+    "email": "support@bizhermit.com"
+  },
+  "plugins": [
+    {
+      "name": "hw",
+      "source": "./plugin",
+      "description": "システム開発をサポートするプラグイン",
+      "category": "development"
+    }
+  ]
+}

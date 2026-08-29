@@ -1,0 +1,36 @@
+{
+  "name": "hermit-works",
+  "dockerComposeFile": "compose.yaml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "dev",
+   "remoteEnv": {
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+  },
+  "postCreateCommand": "bash ./.devcontainer/postCreate.sh",
+  "postStartCommand": "bash ./.devcontainer/postStart.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Anthropic.claude-code",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        "EditorConfig.EditorConfig",
+        "ms-vscode.live-server",
+        "redhat.vscode-yaml",
+        "hediet.vscode-drawio",
+        "ms-python.python"
+      ],
+      "settings": {
+        "files.exclude": {
+          "**/.git": true,
+          "**/.svn": true,
+          "**/.hg": true,
+          "**/.DS_Store": true,
+          "**/Thumbs.db": true
+        }
+      }
+    }
+  }
+}

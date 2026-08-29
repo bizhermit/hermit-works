@@ -1,0 +1,23 @@
+services:
+  dev:
+    env_file:
+      - path: .env
+        required: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    user: root
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - ..:/workspace:cached
+      - claude-config:/home/dev/.claude
+      - gh-config:/home/dev/.config/gh
+    command: sleep infinity
+
+volumes:
+  claude-config:
+  gh-config:
