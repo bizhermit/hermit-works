@@ -10,6 +10,7 @@
 ├── LICENSE                # ライセンス全文の正本
 ├── docs/
 │   └── design/            # 設計書（本ディレクトリ）
+├── scripts/               # 保守用スクリプト
 └── plugin/                # 配布側（インストール時にコピーされる範囲）
     ├── .claude-plugin/
     │   └── plugin.json    # プラグインマニフェスト
