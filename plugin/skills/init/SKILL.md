@@ -2,8 +2,7 @@
 name: init
 description: "Hermit Worksプラグインの初期設定と再展開を行う"
 disable-model-invocation: true
-model: sonnet
-effort: low
+effort: medium
 ---
 
 # hw:init
