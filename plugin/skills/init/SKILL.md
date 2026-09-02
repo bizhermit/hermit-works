@@ -43,7 +43,7 @@ effort: medium
 
     | 節 | 原稿 | リビジョン |
     |--|--|--|
-    | 憲章 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/charter.md` | 1 |
+    | 憲章 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/charter.md` | 2 |
     | 参照データの扱い | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/reference.md` | 1 |
     | 裁定 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/ruling.md` | 2 |
     | 三役審議 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/deliberation.md` | 1 |
