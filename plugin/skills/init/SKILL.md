@@ -46,9 +46,9 @@ effort: medium
     | 憲章 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/charter.md` | 1 |
     | 参照データの扱い | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/reference.md` | 1 |
     | 裁定 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/ruling.md` | 2 |
+    | 三役審議 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/deliberation.md` | 1 |
     | 出力の表記 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/output-style.md` | 1 |
     | 記録の置き先 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/memory.md` | 2 |
-    | 三役審議 | `${CLAUDE_PLUGIN_ROOT}/skills/init/assets/deliberation.md` | 1 |
 
     展開先は使用範囲で決まる。`project`はプロジェクトルートの`CLAUDE.md`、`local`はプロジェクトルートの`CLAUDE.local.md`であり、もう一方のファイルを「展開先でない方」と呼ぶ。
 
