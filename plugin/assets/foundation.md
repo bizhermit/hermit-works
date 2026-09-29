@@ -1,9 +1,3 @@
----
-name: charter
-description: "Hermit Worksの作業品質の基盤。憲章、参照データの扱い、出力の表記、報告前の自己点検を毎リクエストの指示に加える"
-keep-coding-instructions: true
----
-
 ## 憲章
 
 憲章とは思考の軸である。

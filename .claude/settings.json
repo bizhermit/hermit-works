@@ -10,7 +10,6 @@
   "enabledPlugins": {
     "hw@hermit-works": true
   },
-  "outputStyle": "hw:charter",
   "permissions": {
     "allow": [
     ],
