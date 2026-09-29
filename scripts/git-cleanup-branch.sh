@@ -91,8 +91,15 @@ else
         echo "    Skipped (unsafe branch name detected)" >&2
         continue
       fi
-      if ! git branch -d -- "$branch"; then
-        echo "    Failed (maybe not fully merged)"
+      # squashマージでは元のコミットが祖先に入らず`git branch -d`が拒否するため、履歴ではなく内容で判定する
+      # 対象ブランチへマージしても木が変わらなければ、変更はすべて取り込み済みと見なす
+      if ! merged_tree=$(git merge-tree --write-tree "$target_branch" "$branch" 2>/dev/null) \
+        || [ "$merged_tree" != "$(git rev-parse "$target_branch^{tree}")" ]; then
+        echo "    Skipped (changes not merged into $target_branch)"
+        continue
+      fi
+      if ! git branch -D -- "$branch"; then
+        echo "    Failed"
       fi
     fi
   done <<< "$gone_branches"
