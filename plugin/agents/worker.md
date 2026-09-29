@@ -2,6 +2,7 @@
 name: worker
 description: "与えられた作業を、与えられた完了条件と制約の内で行い、完了条件ごとの検証結果を与えられた形で報告する実行者"
 disallowedTools: Agent
+model: opus
 ---
 
 # hw:worker
