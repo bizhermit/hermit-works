@@ -1,36 +1,44 @@
 # Hermit Works
 
-## リポジトリ構成
+Claude Code用のプラグイン。要望を指示書として言語化し、指示書を計画・実行・レビューの分業で仕上げる。
+
+## インストール
+
+マーケットプレイスを登録し、プラグインをインストールする。`<scope>`は`user`、`project`、`local`のいずれかで、省くと`user`になる。
+
+```bash
+claude plugin marketplace add bizhermit/hermit-works --scope <scope>
+claude plugin install hw@hermit-works --scope <scope>
+```
+
+| `<scope>` | 書き込む設定ファイル | 有効になる範囲 |
+| :- | :- | :- |
+| `user` | `~/.claude/settings.json` | 自分のすべてのプロジェクト |
+| `project` | `<プロジェクト>/.claude/settings.json` | そのプロジェクトの貢献者全員 |
+| `local` | `<プロジェクト>/.claude/settings.local.json` | そのプロジェクトの自分だけ |
+
+`project`の設定を共有された貢献者は、同じ二つのコマンドを`--scope project`で一度実行する。
+
+指示書と案件の記録はプロジェクト直下の`.hw/`に置かれるため、`.gitignore`に次を追記する。
+
+```gitignore
+.hw/
+```
+
+## 使い方
+
+### `/hw:request`：要望を指示書にする
 
 ```text
-/                          # 保守側（非配布）
-├── .claude-plugin/
-│   └── marketplace.json   # マーケットプレイス定義
-├── .claude/
-│   └── settings.json      # 本リポジトリ自身でプラグインを有効にする設定
-├── CLAUDE.md              # 本リポジトリ保守用の指示
-├── LICENSE                # ライセンス全文の正本
-├── docs/
-│   └── design/            # 設計書
-├── scripts/
-│   └── git-cleanup-branch.sh # リモートで消えた作業ブランチをローカルから掃除する
-└── plugin/                # 配布側（インストール時にコピーされる範囲）
-    ├── .claude-plugin/
-    │   └── plugin.json    # プラグインマニフェスト
-    ├── LICENSE            # 配布用の写し
-    ├── agents/            # エージェント
-    │   ├── worker.md      # hw:worker（実行者）
-    │   └── reviewer.md    # hw:reviewer（評価者）
-    ├── hooks/             # フック
-    │   ├── hooks.json     # 起動時に作業品質の基盤を加えるフックの定義
-    │   └── foundation.sh  # 作業品質の基盤をフックの出力の形にする
-    ├── skills/            # スキル
-    │   ├── request/       # hw:request
-    │   │   ├── SKILL.md
-    │   │   └── templates/ # 指示書の雛形
-    │   └── execute/       # hw:execute
-    │       ├── SKILL.md
-    │       └── templates/ # 実行計画、報告、レビューの雛形
-    └── assets/            # 共通資材
-        └── foundation.md  # 作業品質の基盤（四節）の本文
+/hw:request <要望> [出力先]
 ```
+
+目的、対象と範囲、完了条件、制約のうち要望から定まらない節を一件ずつ問い、承認を得てから指示書を`.hw/instructions/`に出力する。出力先を引数で指定すればそこへ出力する。
+
+### `/hw:execute`：指示書を実行する
+
+```text
+/hw:execute <指示書のパス>
+```
+
+指示書から実行計画を立てて承認を求め、タスクごとに実行者と評価者を起動し、評価者が承認するまで差し戻す。すべてのタスクの完了後に全体レビューを行い、結果を報告する。引数を省くと`.hw/instructions/`の指示書を一覧して問う。
