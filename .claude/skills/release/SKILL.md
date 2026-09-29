@@ -96,7 +96,7 @@ gh pr list --base main --head develop --state open --json number
     git log <V_main>..origin/develop --oneline
     ```
 
-2. [templates/release-notes.md](${CLAUDE_SKILL_DIR}/templates/release-notes.md)に従ってリリースノートを書く。変更は`develop`へマージされたPRの表題を番号付きで列挙し、バージョンを上げたPRは含めない。
+2. [templates/release-notes.md](${CLAUDE_SKILL_DIR}/templates/release-notes.md)に従ってリリースノートを書く。`<バージョン>`は`V_dev`、`<前のバージョン>`は`V_main`とする。変更は`develop`へマージされたPRの表題を番号付きで列挙し、バージョンを上げたPRは含めない。比較リンクはタグ`V_dev`を打つまで開けないため、5で確かめる。
 3. リリースノートの全文を示して承認を得る。
 4. `develop`から`main`へPRを作成する。表題は「リリース <V_dev>」、本文はリリースノートとする。
 
@@ -121,11 +121,12 @@ gh pr list --base main --head develop --state open --json number
     gh release create <V_main> --target main --title "<V_main>" --notes-file <リリースノート>
     ```
 
-4. 作成を確かめる。
+4. 作成と、リリースノートの比較リンクが開けることを確かめる。`<前のバージョン>`はリリースノートの比較リンクにある値とする。
 
     ```bash
     git ls-remote --tags origin "refs/tags/<V_main>"
     gh release view <V_main>
+    gh api "repos/bizhermit/hermit-works/compare/<前のバージョン>...<V_main>" --jq .status
     ```
 
 5. 報告する。
