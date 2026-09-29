@@ -1,0 +1,53 @@
+name: Merge Branch Rule Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches:
+      - main
+      - develop
+
+permissions: {}
+
+jobs:
+  merge-branch-check:
+    runs-on: ubuntu-latest
+    steps:
+      # ブランチ名は`$`やバッククォートを含められるため、`${{ }}`をスクリプト本文へ展開せず、env経由で受け取る
+      - name: Validate merge rules
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          echo "マージ元 (head): $HEAD_REF"
+          echo "マージ先 (base): $BASE_REF"
+
+          # mainはリリースブランチ。developからのリリースのみを許可する
+          if [ "$BASE_REF" = "main" ]; then
+            if [ "$HEAD_REF" != "develop" ]; then
+              echo "::error title=ルール違反::mainへのマージはdevelopからのみ許可される（マージ元: $HEAD_REF）"
+              exit 1
+            fi
+            echo "通過: developからのリリース"
+            exit 0
+          fi
+
+          # developは開発統合ブランチ。作業ブランチwork/*と、GitHubのRevertが生成するrevert-*を許可する
+          if [ "$BASE_REF" = "develop" ]; then
+            case "$HEAD_REF" in
+              (work/*)
+                echo "通過: 作業ブランチからのマージ"
+                exit 0
+                ;;
+              (revert-*)
+                echo "通過: Revertブランチからのマージ"
+                exit 0
+                ;;
+            esac
+            echo "::error title=ルール違反::developへのマージはwork/*からのみ許可される（マージ元: $HEAD_REF）"
+            exit 1
+          fi
+
+          # branchesフィルタにより到達しない想定だが、フィルタ変更時に黙って通さないよう明示する
+          echo "::error title=対象外のマージ先::ルールが定義されていないマージ先である（マージ先: $BASE_REF）"
+          exit 1
