@@ -43,11 +43,11 @@ argument-hint: "[バージョン]"
 
 ### 状態を取る
 
-`git fetch origin --tags --prune`の後、次を取る。ローカルのブランチは見ず、`origin`の参照だけで判じる。
+`git fetch origin --tags --prune`の後、次を取る。ローカルのブランチは見ず、`origin`の参照だけで判断する。
 
 - `V_main`：`origin/main`の`plugin/.claude-plugin/plugin.json`の`version`
 - `V_dev`：`origin/develop`の同じ値
-- `T_main`：タグ`V_main`の有無
+- `T_main`：タグ`V_main`があるかどうか
 - 開いているPR：`work/bump-*`から`develop`へのものと、`develop`から`main`へのもの
 
 ```bash
@@ -58,7 +58,7 @@ gh pr list --base develop --state open --json number,headRefName --jq '[.[] | se
 gh pr list --base main --head develop --state open --json number
 ```
 
-状態は流れのどこまで終わったかを表す。次の表で、次に行う作業を決める。三行の条件は互いに排他である。
+状態は流れのどこまで終わったかを表す。次の表で、次に行う作業を決める。三行の条件のうち、二つ以上が同時に当てはまることは無い。
 
 | 状態 | 終わっている所 | 次に行う作業 |
 | :- | :- | :- |
@@ -66,12 +66,12 @@ gh pr list --base main --head develop --state open --json number
 | `V_dev`が`V_main`と異なり、`T_main`がある | 2まで | 3. リリースPRを作成する |
 | `T_main`が無い | 4まで | 5. タグとリリースノートを作成する |
 
-次に行う作業に対応する開いているPRがあれば、その作業は既に行われ、マージ待ちである。番号を示し、マージを待つよう伝えて停止する。
+次に行う作業に対応する開いているPRがあれば、その作業は既に行われ、マージを待っている。番号を示し、マージを待つよう伝えて停止する。
 
 - 1に対応するPR：`work/bump-*`から`develop`へのPR
 - 3に対応するPR：`develop`から`main`へのPR
 
-`V_dev`が`V_main`と異なり、かつ`T_main`が無い状態は、前のリリースの5が終わらないまま次の1と2が進んだ状態である。表のとおり5を行うが、その前に、`V_main`のタグが未作成のまま`develop`が進んでいることを示して問う。
+`V_dev`が`V_main`と異なり、かつ`T_main`が無い状態は、前のリリースの5が終わらないまま次の1と2が進んだ状態である。表のとおり5を行うが、その前に、`V_main`のタグが作成されないまま`develop`が進んでいることを示して問う。
 
 ### 1. バージョンを上げる
 
@@ -96,7 +96,7 @@ gh pr list --base main --head develop --state open --json number
     git log <V_main>..origin/develop --oneline
     ```
 
-2. [templates/release-notes.md](${CLAUDE_SKILL_DIR}/templates/release-notes.md)に従ってリリースノートを書く。`<バージョン>`は`V_dev`とする。変更は、取れた変更のうち利用者に届くもの（`plugin/`）を、PRごとではなく内容ごとにまとめて箇条書きにする。変更の内容は、コミットの表題ではなく差分の現物から書く。保守用の変更（開発環境、CI、保守用のスキルやスクリプト等）、READMEの変更、バージョンを上げた変更は含めない。
+2. [templates/release-notes.md](${CLAUDE_SKILL_DIR}/templates/release-notes.md)に従ってリリースノートを書く。`<バージョン>`は`V_dev`とする。変更は、取れた変更のうち利用者に配布されるもの（`plugin/`の変更）を、PRごとではなく内容ごとにまとめて箇条書きにする。変更の内容は、コミットの表題ではなく差分の現物から書く。保守用の変更（開発環境、CI、保守用のスキルやスクリプト等）、READMEの変更、バージョンを上げた変更は含めない。
 3. リリースノートの全文を示して承認を得る。
 4. `develop`から`main`へPRを作成する。表題は「リリース <V_dev>」、本文はリリースノートとする。
 
@@ -121,7 +121,7 @@ gh pr list --base main --head develop --state open --json number
     gh release create <V_main> --target main --title "<V_main>" --notes-file <リリースノート>
     ```
 
-4. 作成を確かめる。
+4. 作成されたことを確かめる。
 
     ```bash
     git ls-remote --tags origin "refs/tags/<V_main>"
@@ -132,7 +132,7 @@ gh pr list --base main --head develop --state open --json number
 
 ## 問い方
 
-問いは一件ずつ行い、答えを得てから次へ進む。承認を求めるときは、これから行う操作（実行するコマンド、作成する内容の全文）と、影響の及ぶ先（ブランチ、PR、タグ、リリース）を示す。判断を求めるときは、問題、原因、案と各案の利害得失、推奨と根拠を添える。推奨は既定値ではなく、答えに従う。
+問いは一件ずつ行い、答えを得てから次へ進む。承認を求めるときは、これから行う操作（実行するコマンド、作成する内容の全文）と、影響の及ぶ先（ブランチ、PR、タグ、リリース）を示す。判断を求めるときは、問題、原因、案と各案の利害得失、推奨と根拠を添える。推奨は既定値として扱わず、答えに従う。
 
 ## 報告
 
