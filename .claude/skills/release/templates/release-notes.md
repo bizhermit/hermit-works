@@ -1,21 +1,25 @@
 # <バージョン>
 
+## 概要
+
 <このリリースで何ができるようになるかを一文で>
 
-## 変更
+## 変更内容
+
+### <スキル名または資材名>
 
 - <利用者から見た変更の内容>
 
 ## 互換を壊す変更
 
-<内容と、利用側で要る対応。無ければ「なし」>
+### <スキル名または資材名>
+
+- <内容と、利用側で要る対応>
+
+<互換を壊す変更が無ければ、見出しを置かずに「なし」>
 
 ## 更新方法
 
-`<scope>`はインストール時に指定したもの（`user`、`project`、`local`）とする。
-
 ```bash
-claude plugin update hw@hermit-works --scope <scope>
+claude plugin update hw@hermit-works --scope [user|project|local]
 ```
-
-変更の全体は[<前のバージョン>...<バージョン>](https://github.com/bizhermit/hermit-works/compare/<前のバージョン>...<バージョン>)で見られる。

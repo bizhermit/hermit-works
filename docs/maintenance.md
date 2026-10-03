@@ -14,5 +14,5 @@
 | :- | :- |
 | `claude plugin validate .` | マーケットプレイス定義（`.claude-plugin/marketplace.json`）を検証する |
 | `claude plugin validate ./plugin` | プラグインマニフェスト（`plugin/.claude-plugin/plugin.json`）を検証する |
-| `/reload-plugins` | セッション内で`plugin/`の変更を読み直す。本リポジトリは`.claude/settings.json`で自分自身をプラグインとして有効にしている |
-| `bash scripts/git-cleanup-branch.sh [切り替え先]` | リモートで消えた作業ブランチをローカルから掃除する。切り替え先の既定は`develop`。VSCodeのタスク「Git: 作業ブランチ整理 (git-cleanup-branch)」からも実行できる |
+| `/reload-plugins` | セッション内で`plugin/`の変更を読み直す。本リポジトリの`.claude/settings.json`は、本リポジトリにあるプラグインを有効にしている |
+| `bash scripts/git-cleanup-branch.sh [切り替え先]` | リモートで削除された作業ブランチを、ローカルからも削除する。切り替え先を省くと`develop`になる。VSCodeのタスク「Git: 作業ブランチを整理する (git-cleanup-branch)」からも実行できる |
