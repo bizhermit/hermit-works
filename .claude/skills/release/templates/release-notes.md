@@ -17,9 +17,3 @@
 - <内容と、利用側で要る対応>
 
 <互換を壊す変更が無ければ、見出しを置かずに「なし」>
-
-## 更新方法
-
-```bash
-claude plugin update hw@hermit-works --scope [user|project|local]
-```
