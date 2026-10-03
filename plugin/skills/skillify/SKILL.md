@@ -9,7 +9,7 @@ description: "hw:executeの案件記録（.hw/cases/）を分析し、複数の�
 
 ## 入力
 
-- 案件記録：`${CLAUDE_PROJECT_DIR}/.hw/cases/<案件>/`のうち、`plan.md`の状態が完了のもの。読むのは`instruction.md`（目的、対象範囲）、`plan.md`（対応方針の節の変更の対象、完了条件と確かめ方、検証の資源・権限・副作用、委任の範囲と、タスクの節の作業、成果物、完了条件）、各タスクの最新の`worker-<n>.md`（行った作業）
+- 案件記録：`${CLAUDE_PROJECT_DIR}/.hw/cases/<案件>/`のうち、`plan.md`の状態が完了のもの。読むのは`instruction.md`（目的、依頼元の意見）、`plan.md`（「対応方針」の節の変更の対象、完了条件と確かめ方、検証の資源・権限・副作用、委任の範囲と、「タスク」の節の作業、成果物、完了条件）、各タスクの最新の`worker-<n>.md`（行った作業）
 - 既存スキル：`${CLAUDE_PROJECT_DIR}/.claude/skills/*/SKILL.md`。プラグインのスキルと利用者個人のスキルは対象にしない
 - 運用：定められた規則（`CLAUDE.md`、運用手順書等）のうち、外部トラッカーの使用を定めた記述
 
@@ -70,7 +70,7 @@ description: "hw:executeの案件記録（.hw/cases/）を分析し、複数の�
 1. 運用：定められた規則が外部トラッカーの使用を定めていれば、そのトラッカー
 2. 既定：`${CLAUDE_PROJECT_DIR}/.hw/instructions/<YYYYMMDD>_<slug>.md`
 
-既定のファイルの作り方（`<YYYYMMDD>`、`<slug>`、同名のときの連番、ディレクトリの作成）は、`hw:request`の[SKILL.md](${CLAUDE_SKILL_DIR}/../request/SKILL.md)の出力先の節と同じである。外部トラッカーへの課題の作成手順は運用が定めるものであり、本スキルは定めない。運用の記述に無い事項は依頼元に問う。
+既定のファイルの作り方（`<YYYYMMDD>`、`<slug>`、同名のときの連番、ディレクトリの作成）は、`hw:request`の[SKILL.md](${CLAUDE_SKILL_DIR}/../request/SKILL.md)の「出力先」の節と同じである。外部トラッカーへの課題の作成手順は運用が定めるものであり、本スキルは定めない。運用の記述に無い事項は依頼元に問う。
 
 ## 停止条件
 
