@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Git: 作業ブランチ整理 (git-cleanup-branch)",
+      "label": "Git: 作業ブランチを整理する (git-cleanup-branch)",
       "type": "shell",
       "command": "bash",
       "args": [
@@ -23,7 +23,7 @@
     {
       "id": "cleanupTargetBranch",
       "type": "promptString",
-      "description": "切り替え先ブランチ（何も入力せず Enter で develop）",
+      "description": "切り替え先ブランチ（何も入力せずにEnterを押すとdevelop）",
       "default": "develop"
     }
   ]
