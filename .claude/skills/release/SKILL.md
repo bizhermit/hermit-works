@@ -96,7 +96,7 @@ gh pr list --base main --head develop --state open --json number
     git log <V_main>..origin/develop --oneline
     ```
 
-2. [templates/release-notes.md](${CLAUDE_SKILL_DIR}/templates/release-notes.md)に従ってリリースノートを書く。`<バージョン>`は`V_dev`とする。変更は、取れた変更のうち利用者に配布されるもの（`plugin/`の変更）を、PRごとではなく内容ごとにまとめて箇条書きにする。変更の内容は、コミットの表題ではなく差分の現物から書く。保守用の変更（開発環境、CI、保守用のスキルやスクリプト等）、READMEの変更、バージョンを上げた変更は含めない。
+2. [templates/release-notes.md](${CLAUDE_SKILL_DIR}/templates/release-notes.md)に従ってリリースノートを書く。`<バージョン>`は`V_dev`とする。変更は、取れた変更のうち利用者に配布されるもの（`plugin/`の変更）を、PRごとではなく内容ごとにまとめて箇条書きにする。箇条書きは、スキルまたは資材（`foundation.md`、エージェント等）ごとに見出しを分け、一つの箇条書きには同じスキルまたは資材の項目だけを並べる。変更の内容は、コミットの表題ではなく差分の現物から書く。保守用の変更（開発環境、CI、保守用のスキルやスクリプト等）、READMEの変更、バージョンを上げた変更は含めない。
 3. リリースノートの全文を示して承認を得る。
 4. `develop`から`main`へPRを作成する。表題は「リリース <V_dev>」、本文はリリースノートとする。
 
