@@ -17,6 +17,12 @@
 ├── README.md              # プラグイン利用者向けの案内
 ├── docs/
 │   ├── design/            # 設計書
+│   │   ├── index.md       # 設計書の全体
+│   │   └── skills/        # スキルごとの設計書
+│   │       ├── request.md
+│   │       ├── execute.md
+│   │       ├── skillify.md
+│   │       └── visualize.md
 │   └── maintenance.md     # 保守用のコマンドとスキルの一覧
 ├── scripts/
 │   └── git-cleanup-branch.sh # リモートで消えた作業ブランチをローカルから掃除する
@@ -37,8 +43,13 @@
     │   ├── execute/       # hw:execute
     │   │   ├── SKILL.md
     │   │   └── templates/ # 対応方針と実行計画、報告、レビューの雛形
-    │   └── skillify/      # hw:skillify
-    │       └── SKILL.md
+    │   ├── skillify/      # hw:skillify
+    │   │   └── SKILL.md
+    │   └── visualize/     # hw:visualize
+    │       ├── SKILL.md
+    │       ├── json-format.md # <案件>.jsonの形
+    │       ├── scripts/   # <案件>.jsonの形の確かめ、セッション記録の集計、HTMLの描画
+    │       └── pricing.json # 単価表
     └── assets/            # 共通資材
         └── foundation.md  # 作業品質の基盤（五節）の本文
 ```
@@ -55,6 +66,7 @@
 ```text
 .hw/
 ├── instructions/      # 指示書（hw:requestの既定の出力先）
+├── analysis/          # 可視化のHTMLとJSON（hw:visualizeの出力先）
 └── cases/             # 案件（hw:executeの作業ディレクトリ）
     └── <YYYYMMDD>_<slug>/
         ├── instruction.md     # 指示書の写し
@@ -71,6 +83,7 @@
 - [hw:request](skills/request.md)：依頼元の要望を、引数（要望または相談）と対話を通して言語化し、指示書として残す。
 - [hw:execute](skills/execute.md)：指示書を受け、対応方針を立てて依頼元の承認を得たうえで、実行計画を立て、計画のタスクごとに実行者に実施させ、評価者のレビューを経て成果物を仕上げる。
 - [hw:skillify](skills/skillify.md)：`hw:execute`の案件記録（`.hw/cases/`）を分析し、複数の案件に繰り返し現れるパターンを割り出し、依頼元が選んだものをプロジェクトのスキル（`.claude/skills/`に置くスキル）にするための指示書を作る。
+- [hw:visualize](skills/visualize.md)：`hw:execute`の案件記録（`.hw/cases/<案件>/`）から、案件で使った資源、進め方、質を集めてHTMLに可視化し、案件一覧の`index.html`を作り直す。
 
 ## エージェント
 
