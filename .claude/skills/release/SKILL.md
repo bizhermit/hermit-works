@@ -82,11 +82,10 @@ gh pr list --base main --head develop --state open --json number
     ```
 
 2. 変更を規則に照らしてバージョンを決める。引数があれば規則に照らし、合えば採り、合わなければ理由を示して問う。
-3. 変更の一覧、バージョン、桁を選んだ根拠を示して承認を得る。
-4. 作業ツリーに未コミットの変更が無いことを確かめ、`origin/develop`から`work/bump-<version>`を作る。
-5. `plugin/.claude-plugin/plugin.json`の`version`を書き換え、`claude plugin validate ./plugin`を通す。
-6. コミットし、pushし、`develop`へPRを作成する。表題は「バージョンを<version>に上げる」、本文は変更の一覧とする。
-7. 報告する。
+3. 作業ツリーに未コミットの変更が無いことを確かめ、`origin/develop`から`work/bump-<version>`を作る。
+4. `plugin/.claude-plugin/plugin.json`の`version`を書き換え、`claude plugin validate ./plugin`を通す。
+5. コミットし、pushし、`develop`へPRを作成する。表題は「バージョンを<version>に上げる」、本文は変更の一覧と、桁を選んだ根拠とする。
+6. 報告する。
 
 ### 3. リリースPRを作成する
 
@@ -97,14 +96,13 @@ gh pr list --base main --head develop --state open --json number
     ```
 
 2. [templates/release-notes.md](${CLAUDE_SKILL_DIR}/templates/release-notes.md)に従ってリリースノートを書く。`<バージョン>`は`V_dev`とする。変更は、取れた変更のうち利用者に配布されるもの（`plugin/`の変更）を、PRごとではなく内容ごとにまとめて箇条書きにする。箇条書きは、スキルまたは資材（`foundation.md`、エージェント等）ごとに見出しを分け、一つの箇条書きには同じスキルまたは資材の項目だけを並べる。変更の内容は、コミットの表題ではなく差分の現物から書く。保守用の変更（開発環境、CI、保守用のスキルやスクリプト等）、READMEの変更、バージョンを上げた変更は含めない。
-3. リリースノートの全文を示して承認を得る。
-4. `develop`から`main`へPRを作成する。表題は「リリース <V_dev>」、本文はリリースノートとする。
+3. `develop`から`main`へPRを作成する。表題は「リリース <V_dev>」、本文はリリースノートとする。
 
     ```bash
     gh pr create --base main --head develop --title "リリース <V_dev>" --body-file <リリースノート>
     ```
 
-5. 報告する。
+4. 報告する。
 
 ### 5. タグとリリースノートを作成する
 
@@ -146,7 +144,8 @@ gh pr list --base main --head develop --state open --json number
 
 - 書き込むのは、`work/bump-*`ブランチ上の`plugin/.claude-plugin/plugin.json`と、GitHub上のPR、タグ、リリースだけである
 - `develop`と`main`には直接pushしない。PRのマージは人が行い、本スキルは行わない
-- push、PRの作成、リリースの作成は、承認を得てから行う
+- pushとPRの作成は、承認を求めずに行う。内容の確認は、人がPRのレビューで行う
+- リリースの作成は、承認を得てから行う
 - 一時ファイル（リリースノートの下書き等）はリポジトリの外に置く
 
 ## 停止条件
