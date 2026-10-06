@@ -76,7 +76,7 @@ def write_text(path, text):
 
 
 def other_periods(out_dir):
-    """出力先の<案件>.jsonから、(案件名, 着手日時, 完了日時)の並びを返す。日時が読めない案件は飛ばす。"""
+    """出力先の<案件>.jsonから、(案件名, 着手日時, 完了日時, tasksのrecord_dirの並び)の並びを返す。日時が読めない案件は飛ばす。"""
     out = []
     for p in sorted(glob.glob(os.path.join(out_dir, "*.json"))):
         try:
@@ -86,7 +86,9 @@ def other_periods(out_dir):
         if not isinstance(d, dict) or not json_format.is_datetime(d.get("started")):
             continue
         finished = d.get("finished") if json_format.is_datetime(d.get("finished")) else None
-        out.append((os.path.splitext(os.path.basename(p))[0], json_format.parse_dt(d["started"]), json_format.parse_dt(finished)))
+        tasks = d.get("tasks") if isinstance(d.get("tasks"), list) else []
+        record_dirs = [t.get("record_dir") for t in tasks if isinstance(t, dict) and isinstance(t.get("record_dir"), str)]
+        out.append((os.path.splitext(os.path.basename(p))[0], json_format.parse_dt(d["started"]), json_format.parse_dt(finished), record_dirs))
     return out
 
 
