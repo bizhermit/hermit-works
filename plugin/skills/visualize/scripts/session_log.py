@@ -9,10 +9,12 @@ import os
 import re
 from datetime import datetime
 
+# 担当の記録のパス。.hw/cases/<案件>/とtasks/<ディレクトリ>/はそれぞれ省略できる（相対パスで書かれた書き先）
 WRITE_RE = re.compile(
-    r"\.hw/cases/([^/\s`'\"]+)/(?:tasks/([^/\s`'\"]+)/)?((worker|reviewer|report|review)-(\d+)\.md)"
+    r"(?<![\w.\-])(?:\.hw/cases/([^/\s`'\"]+)/)?(?:tasks/([^/\s`'\"]+)/)?((worker|reviewer|report|review)-(\d+)\.md)"
 )
 DEST_HEAD_RE = re.compile(r"^#+\s*書き先\s*$", re.M)
+DEST_WORD_RE = re.compile(r"書き先")
 NOTICE_ID_RE = re.compile(r"<tool-use-id>([^<]+)</tool-use-id>")
 NOTICE_MS_RE = re.compile(r"<duration_ms>(\d+)</duration_ms>")
 
@@ -52,8 +54,9 @@ def iter_jsonl(path):
 
 
 def find_destination(prompt):
-    """担当へ渡した指示から書き先を当てる。「書き先」の見出しがあればその下の最初のパス、無ければ最後のパス。"""
-    m = DEST_HEAD_RE.search(prompt)
+    """担当へ渡した指示から書き先を当てる。「書き先」の見出しがあればその下の最初のパス、
+    見出しが無ければ最初の「書き先」の語の後の最初のパス、どちらも無ければ最後のパス。"""
+    m = DEST_HEAD_RE.search(prompt) or DEST_WORD_RE.search(prompt)
     if m:
         w = WRITE_RE.search(prompt, m.end())
         if w:
@@ -222,6 +225,7 @@ class ProjectLog:
         self.log_dir = log_dir
         self.exists = os.path.isdir(log_dir)
         self.launches = {}  # 案件名 -> 担当の起動の並び
+        self.unnamed_launches = []  # 書き先に案件のパスが無い担当の起動の並び
         self.main_messages = {}  # セッションID -> 主会話のassistantの並び
         self.main_events = {}  # セッションID -> 主会話の統括の応答と依頼元の発言の並び
         self.branch_records = {}  # セッションID -> (時刻, gitBranch)の並び
@@ -233,6 +237,7 @@ class ProjectLog:
         session = os.path.splitext(os.path.basename(path))[0]
         records = list(iter_jsonl(path))
         calls = []
+        call_ids = set()  # 書き直されたセッション記録には同じ呼び出しが二度現れるため、tool_use_idごとに最初の一件だけを数える
         results = {}
         notices = {}
         for d in records:
@@ -243,6 +248,9 @@ class ProjectLog:
                 for b in content:
                     if not (isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") == "Agent"):
                         continue
+                    if b.get("id") in call_ids:
+                        continue
+                    call_ids.add(b.get("id"))
                     inp = b.get("input") or {}
                     w = find_destination(str(inp.get("prompt") or ""))
                     if not w:
@@ -293,7 +301,10 @@ class ProjectLog:
             if launch["duration_ms"] is None and b.get("id") in notices:
                 launch["duration_ms"] = notices[b.get("id")][0]
                 launch["duration_source"] = "完了通知のdurationMs"
-            self.launches.setdefault(w.group(1), []).append(launch)
+            if w.group(1):
+                self.launches.setdefault(w.group(1), []).append(launch)
+            else:
+                self.unnamed_launches.append(launch)
 
     def subagent_usage(self, session, agent_id):
         """サブエージェントの記録から、モデル別のトークン量、標準以外の呼び出しの数、最初と最後の記録の時刻と、
