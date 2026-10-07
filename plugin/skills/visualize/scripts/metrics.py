@@ -3,15 +3,17 @@
 案件ファイルは読まない。
 """
 
+from collections import Counter
 from datetime import datetime, timedelta
 
-from json_format import DT_FMT, parse_dt
+from json_format import DT_FMT, OVERALL, parse_dt
 from session_log import TOKEN_KEYS, add_tokens, empty_tiers, empty_tokens, merge_tiers
 
 STALL_SECONDS = 600
 ROLE_OF_KIND = {"worker": "worker", "report": "worker", "reviewer": "reviewer", "review": "reviewer"}
 NO_SESSION = "セッション記録が無い"
 NO_LAUNCH = "案件に結び付く担当の起動が無い"
+ROLES_OF_AGENT = {"hw:worker": ("worker",), "hw:reviewer": ("reviewer", "overall")}
 NO_PRICING = "単価表が無い"
 NOT_IN_PRICING = "単価表に無いモデル"
 NO_STARTED = "着手日時が不明"
@@ -113,10 +115,58 @@ def case_launches(project_log, name, started, finished, now):
     return [l for l in raw if l["start"] is not None and started <= l["start"] < end]
 
 
+def unnamed_case_launches(project_log, dir_keys, start, end):
+    """書き先に案件のパスが無い担当の起動のうち、起動の時刻がstart以上end未満で、
+    書き先のtasks/<ディレクトリ>/がdir_keys（tasksのrecord_dirから取り出した<NN>_<slug>）のいずれかと一致するもの
+    （tasks/<ディレクトリ>/が無ければ全体レビュー）。"""
+    if not project_log.exists:
+        return []
+    return [l for l in project_log.unnamed_launches
+            if l["start"] is not None and start <= l["start"] < end and (l["task_dir"] is None or l["task_dir"] in dir_keys)]
+
+
+def linked_launches(project_log, name, started, finished, record_dirs, now):
+    """案件に結び付く担当の起動を、(書き先のパスで結び付いたもの, 書き先に案件のパスが無く期間とタスクの記録のディレクトリで結び付けたもの)で返す。
+    record_dirs: 案件のtasksのrecord_dirの並び。着手日時が無ければ、後者は空。"""
+    named = case_launches(project_log, name, started, finished, now)
+    if started is None:
+        return named, []
+    dir_keys = {record_dir_key(d) for d in record_dirs} - {None}
+    return named, unnamed_case_launches(project_log, dir_keys, started, period_end(finished, now))
+
+
+def record_launches(case):
+    """記録にある担当の起動を(役割, タスクのID, 回)の並びで返す。reportsが実行者、reviewsのうちtargetがタスクのIDのものが評価者、
+    targetが全体のものが全体レビュー（タスクのIDはNone）。"""
+    out = [("worker", r["task"], r["n"]) for r in case["reports"]]
+    for r in case["reviews"]:
+        out.append(("overall", None, r["n"]) if r["target"] == OVERALL else ("reviewer", r["target"], r["n"]))
+    return out
+
+
+def launch_label(key):
+    role, task, n = key
+    if role == "overall":
+        return "全体レビュー%d回目" % n
+    return "%sの%s%d回目" % (task, "実行者" if role == "worker" else "評価者", n)
+
+
+def unpaired(keys, others):
+    """keysのうち、othersと一つずつ対応させて余ったものを、keysの順に返す。"""
+    rest = Counter(others)
+    out = []
+    for k in keys:
+        if rest[k] > 0:
+            rest[k] -= 1
+        else:
+            out.append(k)
+    return out
+
+
 def build(name, case, project_dir, project_log, pricing, pricing_path, others, now=None):
     """scriptの下に書く辞書を返す。
 
-    name: 案件名。case: 実施者が書いた<案件>.json。others: 他の案件の(案件名, 着手日時, 完了日時)の並び。
+    name: 案件名。case: 実施者が書いた<案件>.json。others: 他の案件の(案件名, 着手日時, 完了日時, tasksのrecord_dirの並び)の並び。
     """
     now = now or datetime.now().astimezone()
     unknown = []
@@ -129,14 +179,17 @@ def build(name, case, project_dir, project_log, pricing, pricing_path, others, n
     end_excl = period_end(finished, now)
 
     # 担当の起動（書き先のパスと期間で案件に結び付ける）
-    raw = case_launches(project_log, name, started, finished, now)
-    if started is None:
-        note("担当の起動の結び付け", "着手日時が不明（期間の条件を使わず、書き先のパスだけで結び付けた）")
     dir_to_task = {}
     for t in case["tasks"]:
         key = record_dir_key(t["record_dir"])
         if key:
             dir_to_task[key] = t["id"]
+    named, unnamed = linked_launches(project_log, name, started, finished, [t["record_dir"] for t in case["tasks"]], now)
+    if started is None:
+        note("担当の起動の結び付け", "着手日時が不明（期間の条件を使わず、書き先のパスだけで結び付けた）")
+    elif unnamed:
+        note("担当の起動の結び付け", "書き先に案件のパスが無い担当の起動（%d件）を、期間とタスクの記録のディレクトリで結び付けた" % len(unnamed))
+    raw = named + unnamed
     launches = []
     unmatched_dirs = set()
     for l in sorted(raw, key=lambda x: (x["start"] or now)):
@@ -190,8 +243,24 @@ def build(name, case, project_dir, project_log, pricing, pricing_path, others, n
         note("担当の起動の記録のディレクトリ tasks/%s/" % key, "tasksのrecord_dirに結び付かない（ディレクトリ名の番号からタスクのIDを当てた）")
     has_session = bool(launches)
     sessions = sorted({l["session"] for l in launches})
+    # 記録と、セッション記録から結び付いた担当の起動の突き合わせ
+    records = record_launches(case)
+    linked = [(l["role"], l["task"], l["n"]) for l in launches]
+    missing_launches = unpaired(records, linked)
+    if missing_launches:
+        note("担当の起動の結び付け", "記録にある担当の起動（%d件）のうち、セッション記録に結び付かなかったもの（%d件：%s）。トークン量、費用、所要時間に数えていない"
+             % (len(records), len(missing_launches), "、".join(launch_label(k) for k in missing_launches)))
+    extra_launches = unpaired(linked, records)
+    if extra_launches:
+        note("担当の起動の結び付け", "セッション記録から結び付いたが記録に無い担当の起動（%d件：%s）。書き先の読み違いの可能性がある"
+             % (len(extra_launches), "、".join(launch_label(k) for k in extra_launches)))
+    mismatched = [(l["role"], l["task"], l["n"]) for l in launches
+                  if l["subagent_type"] in ROLES_OF_AGENT and l["role"] not in ROLES_OF_AGENT[l["subagent_type"]]]
+    if mismatched:
+        note("担当の起動の結び付け", "書き先から読んだ役割と担当の種類が合わない起動（%d件：%s）。書き先の読み違いの可能性がある"
+             % (len(mismatched), "、".join(launch_label(k) for k in mismatched)))
     if not has_session:
-        for m in ("トークン量", "費用", "担当の起動回数", "担当の起動ごとの所要時間", "タスクごとの所要時間",
+        for m in ("トークン量", "費用", "担当の起動ごとの所要時間", "タスクごとの所要時間",
                   "時系列の担当の起動", "止まっていた区間", "並列か直列か"):
             note(m, no_launch_reason(project_log.exists))
 
@@ -245,27 +314,25 @@ def build(name, case, project_dir, project_log, pricing, pricing_path, others, n
         elif cost["excluded_models"]:
             note("一部のモデルの費用", "%s（%s）" % (NOT_IN_PRICING, "、".join(cost["excluded_models"])))
 
-    # 統括の期間が重なる案件（他の案件の着手日時と完了日時は、出力先の他の<案件>.jsonから取る）
+    # 統括の期間が重なる案件（他の案件の着手日時、完了日時、tasksのrecord_dirは、出力先の他の<案件>.jsonから取る。
+    # 他の案件の起動は、この案件の起動と同じ結び付け（linked_launches）で求める）
     overlap_cases = []
     if has_session and started:
-        for other, s1, e1 in others:
+        for other, s1, e1, other_dirs in others:
             if other == name or s1 is None:
                 continue
-            other_sessions = {x["session"] for x in case_launches(project_log, other, s1, e1, now)}
+            other_named, other_unnamed = linked_launches(project_log, other, s1, e1, other_dirs, now)
+            other_sessions = {x["session"] for x in other_named + other_unnamed}
             if overlaps(started, end_excl, s1, period_end(e1, now)) and other_sessions & set(sessions):
                 overlap_cases.append(other)
 
-    # タスクごとの起動回数
-    launch_counts = None
-    if has_session:
-        launch_counts = {"worker": 0, "reviewer": 0, "overall": 0, "tasks": {}}
-        for l in launches:
-            launch_counts[l["role"]] += 1
-    for t in case["tasks"]:
-        ls = [l for l in launches if l["task"] == t["id"]]
-        if has_session:
-            launch_counts["tasks"][t["id"]] = {"worker": sum(1 for l in ls if l["role"] == "worker"),
-                                               "reviewer": sum(1 for l in ls if l["role"] == "reviewer")}
+    # 担当の起動回数（記録から数える）
+    launch_counts = {"worker": 0, "reviewer": 0, "overall": 0,
+                     "tasks": {t["id"]: {"worker": 0, "reviewer": 0} for t in case["tasks"]}}
+    for role, task, _ in records:
+        launch_counts[role] += 1
+        if task is not None:
+            launch_counts["tasks"][task][role] += 1
 
     # 時系列：並列、止まっていた区間
     parallel = None

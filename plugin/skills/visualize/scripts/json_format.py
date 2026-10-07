@@ -10,6 +10,7 @@ DT_FMT = "%Y-%m-%d %H:%M:%S"
 DT_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
 OVERALL = "全体"
 VERDICTS = ("承認", "差し戻し")
+PHASE_NAMES = ("対応方針の作成", "計画", "対応方針の変更", "依頼元への問い", "全体レビュー", "利用者レビュー")
 
 
 class F:
@@ -69,7 +70,7 @@ USER_SENDBACK = {
     "tasks": F("list", null=True, items=F("str")),
 }
 PHASE = {
-    "name": F("str"),
+    "name": F("enum", choices=PHASE_NAMES),
     "start": F("datetime", null=True),
     "end": F("datetime", null=True),
 }
@@ -150,7 +151,7 @@ def check_value(f, v, path, errors, nulls):
         ok = is_datetime(v)
     elif f.kind == "enum":
         if v not in f.choices:
-            errors.append("型が違う: %s（%sのいずれかを書く。今は%r）" % (path, "、".join(f.choices), v))
+            errors.append("選択肢の外: %s（%sのいずれかを書く。今は%r）" % (path, "、".join(f.choices), v))
         return
     elif f.kind == "list":
         ok = isinstance(v, list)
